@@ -1,0 +1,46 @@
+
+body, html {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+}
+
+.my-footer {
+    height: 4em;
+    background-color: #163b65;
+    margin-top: 1.5em;
+    padding: 1em;
+    color: white;
+    font-size: 80%;
+}
+
+.carousel {
+    max-height: 100vh;
+    overflow: hidden;
+}
+
+.carousel-inner {
+    height: 100%;
+}
+
+.carousel-item {
+    height: 100%;
+}
+
+.datepicker {
+    z-index: 10000 !important;
+}
+
+.model-y-image {
+    max-width: 90%;
+}
+
+.model-3-image {
+    max-width: 90%;
+}
+
+.btn-primary {
+    --bs-btn-bg: #163b65;
+    --bs-btn-border-color: #163b65;
+}
