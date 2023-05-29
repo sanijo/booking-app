@@ -17,7 +17,12 @@ func routes(app *config.AppConfig) http.Handler {
     mux.Use(SessionLoad)
 
     mux.Get("/", handlers.Repo.Home)
+    mux.Get("/model-3", handlers.Repo.Model3)
+    mux.Get("/model-y", handlers.Repo.ModelY)
+    mux.Get("/check-availability", handlers.Repo.CheckAvailability)
+    mux.Get("/rent", handlers.Repo.Rent)
     mux.Get("/about", handlers.Repo.About)
+    mux.Get("/contact", handlers.Repo.Contact)
 
     // In static folder are all things that are not html template such as JS,
     // figures

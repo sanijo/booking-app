@@ -1,27 +1,295 @@
 {{define "base"}}
-    <!doctype html>
-    <html lang="en">
-        <head>
-            <title>eRent</title>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1">
-            <!-- Bootstrap CSS -->
-            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-KK94CHFLLe+nY2dmCWGMq91rCGa5gtU4mk92HdvYe+M/SXH301p5ILy+dN9+nJOZ" crossorigin="anonymous">
-            <!-- CSS block (can be overridden by child templates) -->
-            {{block "css" .}}
-    
-            {{end}}
-        </head>
-        <body>
-            <!-- Content block (can be overridden by child templates) -->
-            {{block "content" .}}
-    
-            {{end}}
+<!doctype html>
+<html lang="en">
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <title>eRent</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-KK94CHFLLe+nY2dmCWGMq91rCGa5gtU4mk92HdvYe+M/SXH301p5ILy+dN9+nJOZ" crossorigin="anonymous">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.3/css/lightbox.min.css">
+
+    <!-- local css file -->
+    <link rel="stylesheet" type="text/css" href="/static/css/styles.css">
+</head>
+
+<body>
+
+    <!-- Navigation bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top" style="background-color: #163b65;">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">eRent</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle active" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Models
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="/model-3">Model 3</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="/model-y">Model Y</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="/rent">Rent Now</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="/about">About</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/contact">Contact</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+   <!-- Content block (can be overridden by child templates) -->
+   {{block "content" .}}
+   
+   {{end}}
             
-            <!-- JS block (can be overridden by child templates) -->
-            {{block "js" .}}
+    <!-- Footer -->
+    <div class="b-example-divider"></div>
     
-            {{end}}
-        </body>
-    </html>
+    <div class="container">
+      <footer class="py-3 my-4">
+        <ul class="nav justify-content-center border-bottom pb-3 mb-3">
+          <li class="nav-item"><a href="/" class="nav-link px-2" style="color: #163b65;">Home</a></li>
+          <li class="nav-item"><a href="/about" class="nav-link px-2" style="color:#163b65;">About</a></li>
+          <li class="nav-item"><a href="/contact" class="nav-link px-2" style="color:#163b65;">Contact</a></li>
+        </ul>
+        <p class="text-center" style="color: #163b65;">&copy; 2023 eRent, Inc</p>
+      </footer>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-ENjdO4Dr2bkBIFxQpeoTz1HIcje39Wm4jDKdf19U8gI4ddQ3GYNS7NTKfAdVQSZe"
+        crossorigin="anonymous"></script>
+
+    <!-- datepicker -->
+    <script src="https://cdn.jsdelivr.net/npm/vanillajs-datepicker@1.3.2/dist/js/datepicker-full.min.js"></script>
+
+    <!-- notie notifications -->
+    <script src="https://unpkg.com/notie"></script>
+
+    <!-- sweet alert -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- JS block (can be overridden by child templates) -->
+    {{block "js" .}}
+    
+    {{end}}
+
+    <script>
+
+        let attention = Prompt();
+
+        // Example starter JavaScript for disabling form submissions if there are invalid fields
+        (() => {
+          'use strict'
+        
+          // Fetch all the forms we want to apply custom Bootstrap validation styles to
+          const forms = document.querySelectorAll('.needs-validation')
+        
+          // Loop over them and prevent submission
+          Array.from(forms).forEach(form => {
+            form.addEventListener('submit', event => {
+              if (!form.checkValidity()) {
+                event.preventDefault()
+                event.stopPropagation()
+              }
+        
+              form.classList.add('was-validated')
+            }, false)
+          })
+        })()
+    
+
+        document.getElementById("colorButton").addEventListener("click",
+            function(){
+                //notify("This is message", "warning")
+                //notifyModal("title", "Hello", "success", "My text")
+
+                let html = `
+                  <form id="checkAvailabilityForm" action="" method="post" novalidate class="needs-validation">
+                    <div class="row">
+                      <div class="col">
+                        <div class="row" id="reservationDates">
+                          <div class="col-md-6">
+                            <input required class="form-control" type="text" id="start" name="start" placeholder="Pick up" autocomplete="off">
+                          </div>
+                          <div class="col-md-6">
+                            <input required class="form-control" type="text" id="end" name="end" placeholder="Return" autocomplete="off">  
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </form>
+                `;
+
+                attention.custom({html: html, title: "Choose pick up and return date",});
+            })
+
+        // datepicker
+        const elem = document.getElementById("reservationDates");
+        const rangepicker = new DateRangePicker(elem, {
+          // ...options
+            format: "yyyy-mm-dd",
+            todayHighlight: true,
+            minDate: new Date(),
+            clearButton: true,
+            autohide: true,
+        }); 
+
+        // notie notifications
+        function notify(msg, msgType) {
+            notie.alert({
+            type: msgType,
+            text: msg,
+            })
+        }
+        
+        function notifyModal(title, text, icon, confirmationButton) {
+            Swal.fire({
+                title: title,
+                text: text,
+                icon: icon,
+                confirmButtonText: confirmationButton,
+                confirmButtonColor: '#163b65',
+            })
+        }
+
+        function Prompt() {
+            let toast = function (c) {
+                const {
+                    title = "",
+                    icon = "success",
+                    position = "top-end",
+                } = c;
+
+                const Toast = Swal.mixin({
+                    toast: true,
+                    title: title,
+                    position: position,
+                    icon: icon,
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true,
+                    didOpen: (toast) => {
+                        toast.addEventListener('mouseenter', Swal.stopTimer)
+                        toast.addEventListener('mouseleave', Swal.resumeTimer)
+                    }
+                })
+
+                Toast.fire({})
+            }
+
+            let success = function (c) {
+                const {
+                    title = "",
+                    msg = "",
+                    footer = "",
+                } = c;
+
+                Swal.fire({
+                    icon: "success",
+                    title: title,
+                    text: msg,
+                    footer: footer,
+                    confirmButtonColor: "#163b65"
+                })
+            }
+
+            let error = function (c) {
+                const {
+                    title = "",
+                    msg = "",
+                    footer = "",
+                } = c;
+
+                Swal.fire({
+                    icon: "error",
+                    title: title,
+                    text: msg,
+                    footer: footer,
+                    confirmButtonColor: "#163b65"
+                })
+            }
+
+        async function custom(c) {
+            const {
+                html = "",
+                title = "",
+                footer = "",
+            } = c;
+    
+            const { value: formValues } = await Swal.fire({
+                title: title,
+                width:800,
+                html: html,
+                backdrop: false,
+                focusConfirm: true,
+                showCancelButton: true,
+                confirmButtonColor: "#163b65",
+                didOpen: () => {
+                    const elemStart = Swal.getPopup().querySelector('#start');
+                    const elemEnd = Swal.getPopup().querySelector('#end');
+                    const rangepickerStart = new Datepicker(elemStart, {
+                        // ...options
+                        format: "yyyy-mm-dd",
+                        showOnFocus: true,
+                        orientation: "top",
+                        todayHighlight: true,
+                        minDate: new Date(),
+                        clearButton: true,
+                        autohide: true,
+                    });
+                    const rangepickerEnd = new Datepicker(elemEnd, {
+                        // ...options
+                        format: "yyyy-mm-dd",
+                        orientation: "top",
+                        showOnFocus: true,
+                        todayHighlight: true,
+                        minDate: new Date(),
+                        clearButton: true,
+                        autohide: true,
+                    });
+                },
+                preConfirm: () => {
+                    return [
+                        document.getElementById("start").value,
+                        document.getElementById("end").value
+                    ]
+                },
+            })
+            
+            if (formValues) {
+              Swal.fire({
+                text: JSON.stringify(formValues),
+                confirmButtonColor: "#163b65" 
+              });
+            }
+        }
+
+            return {
+                toast: toast,
+                success: success,
+                error: error,
+                custom: custom,
+            }
+        }
+
+    </script>
+</body>
+</html>
+
 {{end}}
