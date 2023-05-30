@@ -1,4 +1,55 @@
 {{template "base" .}}
-
 {{define "content"}}
+
+    <!-- Carousel -->
+    <div id="main-carousel" class="carousel slide carousel-fade" data-bs-ride="carousel">
+        <ol class="carousel-indicators">
+            <li type="button" data-bs-target="#main-carousel" data-bs-slide-to="0"
+                class="active" aria-current="true" aria-label="Slide 1"></li>
+            <li type="button" data-bs-target="#main-carousel" data-bs-slide-to="1"
+                aria-label="Slide 2"></li>
+        </ol>
+
+        <div class="carousel-inner">
+            <div class="carousel-item active" data-bs-interval="10000">
+                <img src="/static/images/home-car-1.jpg" class="d-block w-100 img-fluid" alt="car1">
+                <div class="carousel-caption d-none d-md-block">
+                    <h5>Tesla Model 3</h5>
+                    <p>We offer Tesla Model 3 vehicles.</p>
+                </div>
+            </div>
+            <div class="carousel-item" data-bs-interval="10000">
+                <img src="/static/images/home-car-2.jpg" class="d-block w-100 img-fluid" alt="car2">
+                <div class="carousel-caption d-none d-md-block">
+                    <h5>Tesla Model Y</h5>
+                    <p>We also offer Tesla Model Y vehicles.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col text-center">
+                <h1 class="mt-4">Unlock the Future with eRent: Where Convenience Meets Sustainability</h1>
+                <p>
+                    eRent offers an exceptional rental experience with our fleet 
+                    of exclusively Tesla Model 3 and Model Y electric cars. Our commitment to quality 
+                    and performance ensures an unforgettable drive while contributing 
+                    to a greener environment. With dedicated customer support and 
+                    comprehensive insurance coverage, we prioritize your satisfaction 
+                    and peace of mind. Choose eRent for a seamless and sustainable 
+                    journey towards the future of electric mobility.
+                </p>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col text-center">
+                <div class="d-flex justify-content-center">
+                    <a href="/rent" class="btn btn-primary">Rent Now</a>
+                </div>
+            </div>
+        </div>
+    </div>
 {{end}}
