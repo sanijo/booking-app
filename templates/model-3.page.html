@@ -1,21 +1,117 @@
 {{template "base" .}}
-
+{{define "title"}}Model 3{{end}}
 {{define "content"}}
+    <title>deez nuts</title>
     <div class="container">
         <div class="row">
             <div class="col">
-                <h1>This is the about us page</h1>
-                <p>Here is something about us ...</p>
-                <p>This came from the template: {{index .StringMap "test"}}</p>
+                <a href="/static/images/model3.jpg" data-lightbox="car-image" data-title="Model 3 Image">
+                    <img src="/static/images/model3.jpg" class="img-fluid
+                    img-thumbnail mx-auto d-block model-3-image" alt="model 3 image">
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col text-center">
+                <h1 class="mt-4">Rent Tesla Model 3</h1>
                 <p>
-                    {{if ne (index .StringMap "remote_ip") ""}}
-                        Your remote IP adress is {{index .StringMap "remote_ip"}}
-                    {{else}}
-                        IP adress unknown. Visit the <a href="/">Homepage</a>
-                        so it can be set.
-                    {{end}}
+                Introducing eRent, your premier destination for an extraordinary 
+                driving adventure in the revolutionary Tesla Model 3. Immerse 
+                yourself in luxury and innovation as you embark on a journey like 
+                no other. With our unwavering focus on excellence and sustainability, 
+                we provide an unparalleled rental experience that harmonizes cutting-edge 
+                technology with environmental consciousness. From our impeccably maintained 
+                fleet of Tesla Model 3 vehicles to our dedicated customer support team, we
+                prioritize your comfort, satisfaction, and peace of mind. Join us at eRent 
+                and be part of the electrifying movement towards a greener and more exhilarating future.
                 </p>
             </div>
-        </div> 
+        </div>
+        <div class="row">
+            <div class="col text-center">
+                <div class="d-flex justify-content-center">
+                    <a id="check-availability-button" href="#!" class="btn btn-primary mr-2">Check Availability</a>
+                </div>
+            </div>
+        </div>
     </div>
 {{end}}
+{{define "js"}}
+    <script>
+        document.getElementById("check-availability-button").addEventListener("click",
+            function(){
+                //notify("This is message", "warning")
+                //notifyModal("title", "Hello", "success", "My text")
+
+                let html = `
+                  <form id="check-availability-form" action="" method="post" novalidate class="needs-validation">
+                    <div class="row", id="reservation-dates-pop">
+                      <div class="col">
+                        <div class="row" id="reservation-dates">
+                          <div class="col-md-6">
+                            <input required class="form-control" type="text" id="start" name="start" placeholder="Pick up" autocomplete="off">
+                          </div>
+                          <div class="col-md-6">
+                            <input required class="form-control" type="text" id="end" name="end" placeholder="Return" autocomplete="off">  
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </form>
+                `;
+
+                attention.custom({
+                    html: html, 
+                    title: "Choose pick up and return date",
+                    
+                    didOpen: () => {
+                        const elemStart = Swal.getPopup().querySelector('#start');
+                        const elemEnd = Swal.getPopup().querySelector('#end');
+                        const rangepickerStart = new Datepicker(elemStart, {
+                            // ...options
+                            format: "yyyy-mm-dd",
+                            showOnFocus: true,
+                            orientation: "top",
+                            todayHighlight: true,
+                            minDate: new Date(),
+                            clearButton: true,
+                            autohide: true,
+                        });
+                        const rangepickerEnd = new Datepicker(elemEnd, {
+                            // ...options
+                            format: "yyyy-mm-dd",
+                            orientation: "top",
+                            showOnFocus: true,
+                            todayHighlight: true,
+                            minDate: new Date(),
+                            clearButton: true,
+                            autohide: true,
+                        });
+                    },
+
+                    callback: function(result) {
+                        console.log("called");
+
+                        let form =
+                            document.getElementById("check-availability-form");
+                        let formData = new FormData(form);
+                        formData.append("csrf_token", "{{.CSRFToken}}");
+
+                        fetch("/check-availability-json", {
+                            method: "post",
+                            body: formData,
+                        })
+                            .then(response => response.json())
+                            .then(data => {
+                                console.log(data);
+                                console.log(data.ok);
+                                console.log(data.message);
+                            })
+                    }
+                });
+            })
+    </script>
+{{end}}
+

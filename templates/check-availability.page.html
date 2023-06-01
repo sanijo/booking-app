@@ -1,21 +1,48 @@
 {{template "base" .}}
-
+{{define "title"}}Rent{{end}}
 {{define "content"}}
     <div class="container">
         <div class="row">
-            <div class="col">
-                <h1>This is the about us page</h1>
-                <p>Here is something about us ...</p>
-                <p>This came from the template: {{index .StringMap "test"}}</p>
-                <p>
-                    {{if ne (index .StringMap "remote_ip") ""}}
-                        Your remote IP adress is {{index .StringMap "remote_ip"}}
-                    {{else}}
-                        IP adress unknown. Visit the <a href="/">Homepage</a>
-                        so it can be set.
-                    {{end}}
-                </p>
+            <div class="col-md-3"></div>
+            <div class="col-md-6">
+                <h1 class="mt-5">Check for Availability</h1>
+                <form action="/check-availability" method="post" novalidate class="needs-validation">
+                  <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+                  <div class="row">
+                      <div class="col">
+                          <div class="row" id="reservationDates">
+                              <div class="col">
+                                  <input required class="form-control" type="text" name="start" placeholder="Pick up date" autocomplete="off">
+                              </div>
+                              <div class="col">
+                                  <input required class="form-control" type="text" name="end" placeholder="Return date" autocomplete="off">  
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+                  <hr>
+                  <div class="container">
+                    <div class="text-center">
+                      <button type="submit" class="btn btn-primary">Check availability</button>
+                    </div>
+                  </div>
+                </form>
             </div>
-        </div> 
+        </div>
     </div>
+{{end}}
+
+{{define "js"}}
+    <script>
+        // datepicker
+        const elem = document.getElementById("reservationDates");
+        const rangepicker = new DateRangePicker(elem, {
+          // ...options
+            format: "yyyy-mm-dd",
+            todayHighlight: true,
+            minDate: new Date(),
+            clearButton: true,
+            autohide: true,
+        }); 
+    </script>
 {{end}}

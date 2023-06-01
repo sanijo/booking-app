@@ -5,9 +5,9 @@ import (
 	"log"
 	"net/http"
 	"time"
-	"github.com/sanijo/booking-app/pkg/config"
-	"github.com/sanijo/booking-app/pkg/handlers"
-	"github.com/sanijo/booking-app/pkg/render"
+	"github.com/sanijo/booking-app/internal/config"
+	"github.com/sanijo/booking-app/internal/handlers"
+	"github.com/sanijo/booking-app/internal/render"
 
 	"github.com/alexedwards/scs/v2"
 )

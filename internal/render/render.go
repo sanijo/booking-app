@@ -6,8 +6,10 @@ import (
 	"html/template"
 	"net/http"
 	"path/filepath"
-	"github.com/sanijo/booking-app/pkg/config"
-	"github.com/sanijo/booking-app/pkg/handlers/models"
+
+	"github.com/justinas/nosurf"
+	"github.com/sanijo/booking-app/internal/config"
+	"github.com/sanijo/booking-app/internal/models"
 )
 
 var app *config.AppConfig
@@ -17,15 +19,12 @@ func NewTemplates(a *config.AppConfig) {
     app = a
 }
 
-func AddDefaultData(td *models.TemplateData) *models.TemplateData {
+func AddDefaultData(td *models.TemplateData, r *http.Request) *models.TemplateData {
+    td.CSRFToken = nosurf.Token(r)
     return td
 }
 
-// V3
-func RenderTemplate(
-    w http.ResponseWriter, 
-    tmpl string, 
-    td *models.TemplateData) {
+func RenderTemplate(w http.ResponseWriter, r *http.Request, tmpl string, td *models.TemplateData) {
 
     tc := make(map[string]*template.Template)
     var err error
@@ -53,7 +52,7 @@ func RenderTemplate(
     buffer := new(bytes.Buffer)
     
     // Template default data
-    td = AddDefaultData(td)
+    td = AddDefaultData(td, r)
 
     err = t.Execute(buffer, td)
     if err != nil {
@@ -108,75 +107,3 @@ func CreateTemplateCache() (map[string]*template.Template, error) {
 
     return cache, nil
 }
-
-//// V1
-//// RenderTemplate renders templates using html/template
-//func RenderTemplateBase(w http.ResponseWriter, tmpl string) {
-//	parsedTemplate, err := 
-//        template.ParseFiles("./templates/" + tmpl, "./templates/base.layout.html")
-//	if err != nil {
-//		fmt.Println("Error parsing template:", err)
-//		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-//		return
-//	}
-//
-//	err = parsedTemplate.Execute(w, nil)
-//	if err != nil {
-//		fmt.Println("Error executing template:", err)
-//		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-//		return
-//	}
-//}
-
-//// V2
-//// Global map variable that stores template so that it doesnt need to be loaded
-//// every time
-//var tc = make(map[string]*template.Template)
-//
-//func RenderTemplate(w http.ResponseWriter, t string) {
-//    var tmpl *template.Template
-//
-//    // Check to see if template allready exists in cache
-//    _, inMap := tc[t]
-//    if !inMap {
-//        // Need to create the template (read from disk and parse it)
-//        fmt.Println("Creating template and adding to cache")
-//        err := createTemplateCache(t)
-//	    if err != nil {
-//	    	fmt.Println("Error parsing template:", err)
-//	    	http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-//	    	return
-//	    }
-//    } else {
-//        // Template allready in the cache
-//        fmt.Println("Using cached template")
-//    }
-//
-//    tmpl = tc[t]
-//
-//    err := tmpl.Execute(w, nil)
-//	if err != nil {
-//		fmt.Println("Error executing template:", err)
-//		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-//		return
-//	}
-//}
-//
-//func createTemplateCache(t string) error  {
-//    templates := [] string {
-//        fmt.Sprintf("./templates/%s",t),
-//        "./templates/base.layout.html",
-//    }
-//
-//    // Parse the template
-//    tmpl, err := template.ParseFiles(templates...)
-//    if err != nil {
-//        return err
-//    }
-//
-//    // Add template to cache
-//    tc[t] = tmpl
-//
-//    return nil
-//}
-

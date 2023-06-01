@@ -1,21 +1,32 @@
 {{template "base" .}}
-
+{{define "title"}}Rent{{end}}
 {{define "content"}}
     <div class="container">
         <div class="row">
-            <div class="col">
-                <h1>This is the about us page</h1>
-                <p>Here is something about us ...</p>
-                <p>This came from the template: {{index .StringMap "test"}}</p>
-                <p>
-                    {{if ne (index .StringMap "remote_ip") ""}}
-                        Your remote IP adress is {{index .StringMap "remote_ip"}}
-                    {{else}}
-                        IP adress unknown. Visit the <a href="/">Homepage</a>
-                        so it can be set.
-                    {{end}}
-                </p>
+            <div class="col-md-3"></div>
+            <div class="col-md-6">
+                <h1 class="mt-5">Rent a Vehicle</h1>
+                <form action="rent.html" method="post" class="needs-validation" novalidate>
+                  <div class="form-group mt-5">
+                     <label for="firstName">First name:</label>
+                     <input type="text" name="firstName" id="firstName" class="form-control" required autocomplete="off">
+                  </div>
+                  <div class="form-group">
+                     <label for="lastName">Last name:</label>
+                     <input type="text" name="lastName" id="lastName" class="form-control" required autocomplete="off">
+                  </div>
+                  <div class="form-group">
+                     <label for="email">Email:</label>
+                     <input type="email" name="email" id="email" class="form-control" required autocomplete="off">
+                  </div>
+                  <div class="form-group">
+                     <label for="phone">Phone number:</label>
+                     <input type="text" name="phone" id="phone" class="form-control" required autocomplete="off">
+                  </div>
+                  <hr>
+                  <button type="submit" class="btn btn-primary">Make reservation</button>
+                </form>
             </div>
-        </div> 
+        </div>
     </div>
 {{end}}

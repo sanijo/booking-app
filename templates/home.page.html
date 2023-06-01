@@ -1,6 +1,6 @@
 {{template "base" .}}
+{{define "title"}}eRent{{end}}
 {{define "content"}}
-
     <!-- Carousel -->
     <div id="main-carousel" class="carousel slide carousel-fade" data-bs-ride="carousel">
         <ol class="carousel-indicators">
@@ -9,7 +9,6 @@
             <li type="button" data-bs-target="#main-carousel" data-bs-slide-to="1"
                 aria-label="Slide 2"></li>
         </ol>
-
         <div class="carousel-inner">
             <div class="carousel-item active" data-bs-interval="10000">
                 <img src="/static/images/home-car-1.jpg" class="d-block w-100 img-fluid" alt="car1">
@@ -27,7 +26,6 @@
             </div>
         </div>
     </div>
-
     <div class="container-fluid">
         <div class="row">
             <div class="col text-center">
@@ -43,11 +41,10 @@
                 </p>
             </div>
         </div>
-
         <div class="row">
             <div class="col text-center">
                 <div class="d-flex justify-content-center">
-                    <a href="/rent" class="btn btn-primary">Rent Now</a>
+                    <a href="/check-availability" class="btn btn-primary">Rent Now</a>
                 </div>
             </div>
         </div>
