@@ -48,3 +48,9 @@ body, html {
     --bs-btn-bg: #163b65;
     --bs-btn-border-color: #163b65;
 }
+
+.notie-container {
+  position: fixed;
+  z-index: 9999; /* Adjust the z-index value as needed */
+  top: 60px; /* Adjust the top position to make it below the sticky navigation bar */
+}

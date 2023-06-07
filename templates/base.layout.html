@@ -53,6 +53,9 @@
         </div>
     </nav>
 
+    <!-- Add the "notie-container" class to the notie container -->
+    <div id="notie-container" class="notie-container"></div>
+
    <!-- Content block (can be overridden by child templates) -->
    {{block "content" .}}
    
@@ -130,6 +133,18 @@
                 confirmButtonColor: '#163b65',
             })
         }
+
+        {{with .Error}}
+        notify("{{.}}", "error")
+        {{end}}
+
+        {{with .Flash}}
+        notify("{{.}}", "success")
+        {{end}}
+
+        {{with .Warning}}
+        notify("{{.}}", "warning")
+        {{end}}
 
         function Prompt() {
             let toast = function (c) {

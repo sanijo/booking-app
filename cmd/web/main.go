@@ -1,13 +1,16 @@
 package main
 
 import (
+	"encoding/gob"
 	"fmt"
 	"log"
 	"net/http"
 	"time"
-	"github.com/sanijo/booking-app/internal/config"
-	"github.com/sanijo/booking-app/internal/handlers"
-	"github.com/sanijo/booking-app/internal/render"
+
+	"github.com/sanijo/rent-app/internal/config"
+	"github.com/sanijo/rent-app/internal/handlers"
+	"github.com/sanijo/rent-app/internal/models"
+	"github.com/sanijo/rent-app/internal/render"
 
 	"github.com/alexedwards/scs/v2"
 )
@@ -18,6 +21,8 @@ var session *scs.SessionManager
 
 // main is the main app function
 func main() {
+    // What to put in session
+    gob.Register(models.Rent{})
 
     // Change to true if in production
     app.InProduction = false

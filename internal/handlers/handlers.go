@@ -3,11 +3,13 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 
-	"github.com/sanijo/booking-app/internal/config"
-	"github.com/sanijo/booking-app/internal/models"
-	"github.com/sanijo/booking-app/internal/render"
+	"github.com/sanijo/rent-app/internal/config"
+	"github.com/sanijo/rent-app/internal/forms"
+	"github.com/sanijo/rent-app/internal/models"
+	"github.com/sanijo/rent-app/internal/render"
 )
 
 // Repository is the repository type
@@ -82,7 +84,50 @@ func (m *Repository) PostAvailabilityJSON(w http.ResponseWriter, r *http.Request
 
 // Rent is rent page handler
 func (m *Repository) Rent(w http.ResponseWriter, r *http.Request) {
-    render.RenderTemplate(w, r, "rent.page.html", &models.TemplateData{})
+    var emptyRent models.Rent
+    data := make(map[string]interface{})
+    data["rent"] = emptyRent
+
+    render.RenderTemplate(w, r, "rent.page.html", &models.TemplateData{
+        Form: forms.New(nil),
+        Data: data,
+    })
+}
+
+// PostRent handles the posting of a rent form
+func (m *Repository) PostRent(w http.ResponseWriter, r *http.Request) {
+    err := r.ParseForm()
+    if err != nil {
+        http.Error(w, "An error occured", http.StatusInternalServerError)
+        log.Printf("Error parsing form %s", err)
+    }
+
+    rent := models.Rent{
+        FirstName: r.Form.Get("first_name"),
+        LastName: r.Form.Get("last_name"),
+        Email: r.Form.Get("email"),
+        Phone: r.Form.Get("phone"),
+    }
+
+    form := forms.New(r.PostForm)
+    form.Required("first_name", "last_name", "email")
+    form.MinLength("first_name", 2, r)
+    form.IsEmail("email")
+
+    if !form.Valid() {
+        data := make(map[string]interface{})
+        data["rent"] = rent
+
+        render.RenderTemplate(w, r, "rent.page.html", &models.TemplateData{
+            Form: form,
+            Data: data,
+        })
+        return
+    }
+
+    // store rent value into session (type enabled in main)
+    m.App.Session.Put(r.Context(), "rent", rent)
+    http.Redirect(w, r, "/rent-summary", http.StatusSeeOther)
 }
 
 // About is about page handler
@@ -94,4 +139,24 @@ func (m *Repository) About(w http.ResponseWriter, r *http.Request) {
 // Contact is contact page handler
 func (m *Repository) Contact(w http.ResponseWriter, r *http.Request) {
     render.RenderTemplate(w, r, "contact.page.html", &models.TemplateData{})
+}
+
+// RentSummary is rent-summary page handler
+func (m *Repository) RentSummary(w http.ResponseWriter, r *http.Request) {
+    rent, ok := m.App.Session.Get(r.Context(), "rent").(models.Rent)
+    if !ok {
+        log.Println("Cannot get item from session")
+        m.App.Session.Put(r.Context(), "error", "Can't get rent from session")
+        http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+        return
+    }
+
+    m.App.Session.Remove(r.Context(), "rent")
+
+    data := make(map[string]interface{})
+    data["rent"] = rent
+
+    render.RenderTemplate(w, r, "rent-summary.page.html", &models.TemplateData{
+        Data: data,
+    })
 }

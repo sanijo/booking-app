@@ -1,0 +1,42 @@
+{{template "base" .}}
+{{define "title"}}Summary{{end}}
+{{define "content"}}
+
+    {{$ren := index .Data "rent"}}
+
+    <div class="container">
+      <div class="row">
+        <div class="col">
+          <h1 class="mt-5">Rent Summary</h1>         
+          <hr>
+
+          <table class="table table-striped">
+            <thead></thead>
+            <tbody>
+              <tr>
+                <td>Name:</td>
+                <td>{{$ren.FirstName}} {{$ren.LastName}}</td>
+              </tr>
+              <tr>
+                <td>Pick up date:</td>
+                <td></td>
+              </tr>
+              <tr>
+                <td>Return date:</td>
+                <td></td>
+              </tr>
+              <tr>
+                <td>Email:</td>
+                <td>{{$ren.Email}}</td>
+              </tr>
+              <tr>
+                <td>Phone:</td>
+                <td>{{$ren.Phone}}</td>
+              </tr>
+            </tbody>
+          </table>
+
+        </div>
+      </div>
+    </div>
+{{end}}
