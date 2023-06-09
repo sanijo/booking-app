@@ -34,8 +34,8 @@ func routes(app *config.AppConfig) http.Handler {
 
     // In static folder are all things that are not html template such as JS,
     // figures
-    filseServer := http.FileServer(http.Dir("./static/"))
-    mux.Handle("/static/*", http.StripPrefix("/static", filseServer))
+    filesServer := http.FileServer(http.Dir("./static/"))
+    mux.Handle("/static/*", http.StripPrefix("/static", filesServer))
 
     return mux
 } 

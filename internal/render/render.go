@@ -2,6 +2,7 @@ package render
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -12,7 +13,10 @@ import (
 	"github.com/sanijo/rent-app/internal/models"
 )
 
+var functions = template.FuncMap{}
+
 var app *config.AppConfig
+var pathToTemplates = "./templates"
 
 // NewTemplates sets the config for the template package
 func NewTemplates(a *config.AppConfig) {
@@ -27,7 +31,7 @@ func AddDefaultData(td *models.TemplateData, r *http.Request) *models.TemplateDa
     return td
 }
 
-func RenderTemplate(w http.ResponseWriter, r *http.Request, tmpl string, td *models.TemplateData) {
+func RenderTemplate(w http.ResponseWriter, r *http.Request, tmpl string, td *models.TemplateData) error {
 
     tc := make(map[string]*template.Template)
     var err error
@@ -40,15 +44,17 @@ func RenderTemplate(w http.ResponseWriter, r *http.Request, tmpl string, td *mod
 	    if err != nil {
             fmt.Println("Cannot create template cache:", err)
             http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+            return err
 	    }
     }
 
     // Get requested template from cache
     t, available := tc[tmpl]
     if !available {
-		fmt.Println("Template unavailable:", tmpl)
+        err := fmt.Sprintf("Template unavailable: %s", tmpl)
+        fmt.Println(err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
+		return errors.New(err)
     }
 
     // Render the template
@@ -61,22 +67,25 @@ func RenderTemplate(w http.ResponseWriter, r *http.Request, tmpl string, td *mod
     if err != nil {
         fmt.Println("Error executing template:", err)
         http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-        return
+        return err
     }
     _, err = buffer.WriteTo(w)
     if err != nil {
         fmt.Println("Error writing template to response:", err)
         http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-        return
+        return err
     }
+
+    return nil
 }
 
+//CreateTemplateCache creates a template cache as a map
 func CreateTemplateCache() (map[string]*template.Template, error) {
     // Create empty cache map of pointers to templates
     cache := make(map[string]*template.Template)
    
     // Get all files ending with *.page.html from ./templates/
-    pages, err := filepath.Glob("./templates/*.page.html")
+    pages, err := filepath.Glob(fmt.Sprintf("%s/*.page.html", pathToTemplates))
     if err != nil {
         return cache, err
     }
@@ -85,20 +94,20 @@ func CreateTemplateCache() (map[string]*template.Template, error) {
     for _, page := range pages {
         name := filepath.Base(page)
         // Parse the page template file
-        ts, err := template.New(name).ParseFiles(page)
+        ts, err := template.New(name).Funcs(functions).ParseFiles(page)
         if err != nil {
             return cache, err
         }
 
         // Get all files ending with *.layout.html
-        layouts, err := filepath.Glob("./templates/*.layout.html")
+        layouts, err := filepath.Glob(fmt.Sprintf("%s/*.layout.html", pathToTemplates))
         if err != nil {
             return cache, err
         }
         
         // If layout files exist, parse and add them to the template set
         if len(layouts) > 0 {
-            ts, err = ts.ParseGlob("./templates/*.layout.html")
+            ts, err = ts.ParseGlob(fmt.Sprintf("%s/*.layout.html", pathToTemplates))
             if err != nil {
                 return cache, err
             }
