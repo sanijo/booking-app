@@ -64,3 +64,11 @@ func (f *Form) IsEmail(field string) {
         f.Errors.Add(field, "Invalid email adress")
     }
 }
+
+// IsURL checks if the input is valid url
+func (f *Form) IsURL(field string) {
+    if !govalidator.IsURL(f.Get(field)) {
+        f.Errors.Add(field, "Invalid URL")
+    }
+}
+
