@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -36,6 +37,12 @@ func getRoutes() http.Handler {
     session.Cookie.Persist = true
     session.Cookie.SameSite = http.SameSiteLaxMode
     session.Cookie.Secure = app.InProduction // in production: true
+
+    // Set up info and error loggers
+    infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
+    app.InfoLog = infoLog
+    errorLog := log.New(os.Stdout, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
+    app.ErrorLog = errorLog
 
     // Set pointer in config to session so that is available in program
     app.Session = session

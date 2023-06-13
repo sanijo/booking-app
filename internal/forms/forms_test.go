@@ -87,6 +87,12 @@ func TestForm_MinLength(t *testing.T) {
     if form.Valid() {
         t.Error("form shows valid when field lenght is smaller than min length")
     }
+
+    isError = form.Errors.Get("field")
+    if isError == "" {
+        t.Error("did not retrieve error message for field that failed validation")
+    }
+
 }
 
 func TestForm_IsEmail(t *testing.T) {

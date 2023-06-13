@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/sanijo/rent-app/internal/config"
 	"github.com/sanijo/rent-app/internal/handlers"
+	"github.com/sanijo/rent-app/internal/helpers"
 	"github.com/sanijo/rent-app/internal/models"
 	"github.com/sanijo/rent-app/internal/render"
 
@@ -18,6 +20,8 @@ import (
 const portNumber = ":8080"
 var app config.AppConfig
 var session *scs.SessionManager
+var infoLog *log.Logger
+var errorLog *log.Logger
 
 // main is the main app function
 func main() {
@@ -48,6 +52,13 @@ func run() error {
     // Change to true if in production
     app.InProduction = false
 
+    // Set up info and error loggers
+    infoLog = log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
+    app.InfoLog = infoLog
+    errorLog = log.New(os.Stdout, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
+    app.ErrorLog = errorLog
+
+    // Set up session
     session = scs.New()
     session.Lifetime = 24 * time.Hour
     session.Cookie.Persist = true
@@ -57,6 +68,7 @@ func run() error {
     // Set pointer in config to session so that is available in program
     app.Session = session
 
+    // Create template cache
     tc, err := render.CreateTemplateCache()
 	if err != nil {
         log.Fatal("cannot create template cache")
@@ -68,9 +80,11 @@ func run() error {
     app.TemplateCache = tc
     app.UseCache = false
 
+    // Create repo and handlers
     repo := handlers.NewRepo(&app)
     handlers.NewHandlers(repo)
-    
+    // Give access to app config variable inside helpers package
+    helpers.NewHelpers(&app)
     // Give access to app config variable inside render package
     render.NewTemplates(&app)
 

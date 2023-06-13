@@ -3,11 +3,11 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/sanijo/rent-app/internal/config"
 	"github.com/sanijo/rent-app/internal/forms"
+	"github.com/sanijo/rent-app/internal/helpers"
 	"github.com/sanijo/rent-app/internal/models"
 	"github.com/sanijo/rent-app/internal/render"
 )
@@ -63,7 +63,7 @@ type jsonResponse struct {
     OK bool `json:"ok"`
     Message string `json:"message"`
 }
-// PostkAvailabilityJSON handles request for availability and sends JSON
+// PostAvailabilityJSON handles request for availability and sends JSON
 // response
 func (m *Repository) PostAvailabilityJSON(w http.ResponseWriter, r *http.Request) {
     resp := jsonResponse {
@@ -73,7 +73,7 @@ func (m *Repository) PostAvailabilityJSON(w http.ResponseWriter, r *http.Request
 
     out, err := json.MarshalIndent(resp, "", "    ")
     if err != nil {
-        fmt.Println(err)
+        helpers.ServerError(w, err)
         return
     }
 
@@ -98,8 +98,8 @@ func (m *Repository) Rent(w http.ResponseWriter, r *http.Request) {
 func (m *Repository) PostRent(w http.ResponseWriter, r *http.Request) {
     err := r.ParseForm()
     if err != nil {
-        http.Error(w, "An error occured", http.StatusInternalServerError)
-        log.Printf("Error parsing form %s", err)
+        helpers.ServerError(w, err)
+        return
     }
 
     rent := models.Rent{
@@ -132,7 +132,6 @@ func (m *Repository) PostRent(w http.ResponseWriter, r *http.Request) {
 
 // About is about page handler
 func (m *Repository) About(w http.ResponseWriter, r *http.Request) {
-    // send the data to the RenderTemplate
     render.RenderTemplate(w, r, "about.page.html", &models.TemplateData{})
 }
 
@@ -145,7 +144,7 @@ func (m *Repository) Contact(w http.ResponseWriter, r *http.Request) {
 func (m *Repository) RentSummary(w http.ResponseWriter, r *http.Request) {
     rent, ok := m.App.Session.Get(r.Context(), "rent").(models.Rent)
     if !ok {
-        log.Println("Cannot get item from session")
+        m.App.ErrorLog.Println("Cannot get item from session")
         m.App.Session.Put(r.Context(), "error", "Can't get rent from session")
         http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
         return
