@@ -111,7 +111,7 @@ func (m *Repository) PostRent(w http.ResponseWriter, r *http.Request) {
 
     form := forms.New(r.PostForm)
     form.Required("first_name", "last_name", "email")
-    form.MinLength("first_name", 2, r)
+    form.MinLength("first_name", 2)
     form.IsEmail("email")
 
     if !form.Valid() {
