@@ -1,0 +1,14 @@
+add_foreign_key("rent_restrictions", "model_id", {"models": ["id"]}, {
+    "on_delete": "cascade",
+    "on_update": "cascade",
+})
+
+add_foreign_key("rent_restrictions", "rent_id", {"rent": ["id"]}, {
+    "on_delete": "cascade",
+    "on_update": "cascade",
+})
+
+add_foreign_key("rent_restrictions", "restriction_id", {"restriction_types": ["id"]}, {
+    "on_delete": "cascade",
+    "on_update": "cascade",
+})

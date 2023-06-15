@@ -1,0 +1,7 @@
+create_table("models") {
+  t.Column("id", "integer", {"primary": true})
+  t.Column("model_name", "string", {"default": ""})
+  t.Column("created_at", "timestamptz", {"default_raw": "now()"})
+  t.Column("updated_at", "timestamptz", {"default_raw": "now()"})
+}
+

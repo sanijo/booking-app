@@ -1,0 +1,5 @@
+drop_foreign_key("rent_restrictions", "rent_restrictions_models_id_fk", {"if_exists": true})
+
+drop_foreign_key("rent_restrictions", "rent_restrictions_rent_id_fk", {"if_exists": true})
+
+drop_foreign_key("rent_restrictions", "rent_restrictions_restriction_types_id_fk", {"if_exists": true})

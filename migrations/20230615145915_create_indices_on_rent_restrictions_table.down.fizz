@@ -1,0 +1,3 @@
+drop_index("rent_restrictions", "rent_restrictions_start_date_end_date_model_id_rent_id_idx")
+drop_index("rent_restrictions", "rent_restrictions_model_id_idx")
+drop_index("rent_restrictions", "rent_restrictions_rent_id_idx")

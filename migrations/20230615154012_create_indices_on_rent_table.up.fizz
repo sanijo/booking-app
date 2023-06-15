@@ -1,0 +1,2 @@
+add_index("rent", "last_name", {})
+add_index("rent", "email", {})

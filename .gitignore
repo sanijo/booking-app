@@ -23,3 +23,8 @@ go.work
 # Application binary file 
 rent-app
 
+# database.yml file
+database.yml
+
+# Database sql file
+rent-app.sql

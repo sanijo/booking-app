@@ -1,0 +1,3 @@
+add_index("rent_restrictions", ["start_date", "end_date", "model_id", "rent_id"], {})
+add_index("rent_restrictions", "model_id", {})
+add_index("rent_restrictions", "rent_id", {})

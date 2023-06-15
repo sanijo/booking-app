@@ -1,0 +1,2 @@
+drop_index("rent", "rent_email_idx")
+drop_index("rent", "rent_last_name_idx")

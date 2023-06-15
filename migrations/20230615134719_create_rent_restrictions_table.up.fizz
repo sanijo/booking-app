@@ -1,0 +1,11 @@
+create_table("rent_restrictions") {
+  t.Column("id", "integer", {"primary": true})
+  t.Column("start_date", "date", {})
+  t.Column("end_date", "date", {})
+  t.Column("model_id", "bigint", {})
+  t.Column("rent_id", "bigint", {})
+  t.Column("created_at", "timestamptz", {"default_raw": "now()"})
+  t.Column("updated_at", "timestamptz", {"default_raw": "now()"})
+  t.Column("restriction_id", "bigint", {})
+}
+
