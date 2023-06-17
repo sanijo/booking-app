@@ -6,24 +6,29 @@ import (
 	"net/http"
 
 	"github.com/sanijo/rent-app/internal/config"
+	"github.com/sanijo/rent-app/internal/driver"
 	"github.com/sanijo/rent-app/internal/forms"
 	"github.com/sanijo/rent-app/internal/helpers"
 	"github.com/sanijo/rent-app/internal/models"
 	"github.com/sanijo/rent-app/internal/render"
+	"github.com/sanijo/rent-app/internal/repository"
+	"github.com/sanijo/rent-app/internal/repository/dbrepo"
 )
 
 // Repository is the repository type
 type Repository struct {
     App *config.AppConfig
+    DB repository.DatabaseRepo
 }
 
 // Repo repository used by the handlers
 var Repo *Repository
 
 // NewRepo sets a new repository
-func NewRepo(a *config.AppConfig) *Repository {
+func NewRepo(a *config.AppConfig, db *driver.DB) *Repository {
     return &Repository {
         App: a,
+        DB: dbrepo.NewPostgresRepo(db.SQL, a),
     }
 }
 

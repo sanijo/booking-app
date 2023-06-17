@@ -3,6 +3,10 @@ package driver
 import (
 	"database/sql"
 	"time"
+
+    _ "github.com/jackc/pgx/v5"
+    _ "github.com/jackc/pgx/v5/stdlib"
+    _ "github.com/jackc/pgx/v5/pgconn"
 )
 
 // DB is a wrapper around sql.DB and holds the database connections.
@@ -23,6 +27,15 @@ const maxIdleDbConn = 5
 // maxDbLifetime is the maximum amount of time a connection may be reused.
 const maxDbLifetime = 5 * time.Minute
 
+// testDB tests the database connection using Ping.
+func testDB(db *sql.DB) error {
+    if err := db.Ping(); err != nil {
+        return err
+    }
+
+    return nil
+}
+
 // NewDatabase opens a new database connection to the given DSN.
 func NewDatabase(dsn string) (*sql.DB, error) {
     db, err := sql.Open("pgx", dsn)
@@ -30,7 +43,7 @@ func NewDatabase(dsn string) (*sql.DB, error) {
         return nil, err
     }
 
-    if err = db.Ping(); err != nil {
+    if err = testDB(db); err != nil {
         return nil, err
     }
 
@@ -50,19 +63,10 @@ func ConnectSQL(dsn string) (*DB, error) {
 
     dbConn.SQL = db
 
-    err = testDB(db)
-    if err != nil {
+    if err = testDB(db); err != nil {
         return nil, err
     }
 
     return dbConn, nil
 }
 
-// testDB tests the database connection using Ping.
-func testDB(db *sql.DB) error {
-    if err := db.Ping(); err != nil {
-        return err
-    }
-
-    return nil
-}

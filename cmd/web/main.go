@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/sanijo/rent-app/internal/config"
+	"github.com/sanijo/rent-app/internal/driver"
 	"github.com/sanijo/rent-app/internal/handlers"
 	"github.com/sanijo/rent-app/internal/helpers"
 	"github.com/sanijo/rent-app/internal/models"
@@ -26,10 +27,12 @@ var errorLog *log.Logger
 // main is the main app function
 func main() {
 
-    err := run()
+    db, err := run()
     if err != nil {
         log.Fatal(err)
     }
+    // Close database connection when main function ends
+    defer db.SQL.Close()
 
     fmt.Println("Starting application on port", portNumber)
 
@@ -45,7 +48,7 @@ func main() {
         
 } 
 
-func run() error {
+func run() (*driver.DB, error) {
     // What to put in session
     gob.Register(models.Rent{})
 
@@ -68,11 +71,19 @@ func run() error {
     // Set pointer in config to session so that is available in program
     app.Session = session
 
+    // Connect to database
+    log.Println("Connecting to database...")
+    db, err := driver.ConnectSQL("host=localhost port=5432 dbname=rent-app user=postgres sslmode=disable")
+    if err != nil {
+        log.Fatal("Cannot connect to database!")
+    }
+    log.Println("Connected to database!")
+
     // Create template cache
     tc, err := render.CreateTemplateCache()
 	if err != nil {
         log.Fatal("cannot create template cache")
-        return err
+        return nil, err
 	}
    
     // Setting TemplateCache in config so that is cached all the time while app
@@ -81,12 +92,12 @@ func run() error {
     app.UseCache = false
 
     // Create repo and handlers
-    repo := handlers.NewRepo(&app)
+    repo := handlers.NewRepo(&app, db)
     handlers.NewHandlers(repo)
     // Give access to app config variable inside helpers package
     helpers.NewHelpers(&app)
     // Give access to app config variable inside render package
     render.NewTemplates(&app)
 
-    return nil
+    return db, nil
 }
