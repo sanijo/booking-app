@@ -65,7 +65,7 @@ CREATE TABLE public.rent (
     first_name character varying(255) DEFAULT ''::character varying NOT NULL,
     last_name character varying(255) DEFAULT ''::character varying NOT NULL,
     email character varying(255) NOT NULL,
-    phone_number character varying(255) DEFAULT ''::character varying NOT NULL,
+    phone character varying(255) DEFAULT ''::character varying NOT NULL,
     start_date date NOT NULL,
     end_date date NOT NULL,
     model_id bigint NOT NULL,

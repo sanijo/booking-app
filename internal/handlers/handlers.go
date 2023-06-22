@@ -39,22 +39,22 @@ func NewHandlers(r *Repository) {
 
 // Home is homepage handler
 func (m *Repository) Home(w http.ResponseWriter, r *http.Request) {
-    render.RenderTemplate(w, r, "home.page.html", &models.TemplateData{})
+    render.Template(w, r, "home.page.html", &models.TemplateData{})
 }
 
 // Model3 is model-3 page handler
 func (m *Repository) Model3(w http.ResponseWriter, r *http.Request) {
-    render.RenderTemplate(w, r, "model-3.page.html", &models.TemplateData{})
+    render.Template(w, r, "model-3.page.html", &models.TemplateData{})
 }
 
 // ModelY is model-y page handler
 func (m *Repository) ModelY(w http.ResponseWriter, r *http.Request) {
-    render.RenderTemplate(w, r, "model-y.page.html", &models.TemplateData{})
+    render.Template(w, r, "model-y.page.html", &models.TemplateData{})
 }
 
 // CheckAvailability is check-availability page handler
 func (m *Repository) CheckAvailability(w http.ResponseWriter, r *http.Request) {
-    render.RenderTemplate(w, r, "check-availability.page.html", &models.TemplateData{})
+    render.Template(w, r, "check-availability.page.html", &models.TemplateData{})
 }
 
 // PostkAvailability is check-availability page handler
@@ -93,7 +93,7 @@ func (m *Repository) Rent(w http.ResponseWriter, r *http.Request) {
     data := make(map[string]interface{})
     data["rent"] = emptyRent
 
-    render.RenderTemplate(w, r, "rent.page.html", &models.TemplateData{
+    render.Template(w, r, "rent.page.html", &models.TemplateData{
         Form: forms.New(nil),
         Data: data,
     })
@@ -123,7 +123,7 @@ func (m *Repository) PostRent(w http.ResponseWriter, r *http.Request) {
         data := make(map[string]interface{})
         data["rent"] = rent
 
-        render.RenderTemplate(w, r, "rent.page.html", &models.TemplateData{
+        render.Template(w, r, "rent.page.html", &models.TemplateData{
             Form: form,
             Data: data,
         })
@@ -137,12 +137,12 @@ func (m *Repository) PostRent(w http.ResponseWriter, r *http.Request) {
 
 // About is about page handler
 func (m *Repository) About(w http.ResponseWriter, r *http.Request) {
-    render.RenderTemplate(w, r, "about.page.html", &models.TemplateData{})
+    render.Template(w, r, "about.page.html", &models.TemplateData{})
 }
 
 // Contact is contact page handler
 func (m *Repository) Contact(w http.ResponseWriter, r *http.Request) {
-    render.RenderTemplate(w, r, "contact.page.html", &models.TemplateData{})
+    render.Template(w, r, "contact.page.html", &models.TemplateData{})
 }
 
 // RentSummary is rent-summary page handler
@@ -160,7 +160,7 @@ func (m *Repository) RentSummary(w http.ResponseWriter, r *http.Request) {
     data := make(map[string]interface{})
     data["rent"] = rent
 
-    render.RenderTemplate(w, r, "rent-summary.page.html", &models.TemplateData{
+    render.Template(w, r, "rent-summary.page.html", &models.TemplateData{
         Data: data,
     })
 }

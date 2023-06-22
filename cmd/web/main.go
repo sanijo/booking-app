@@ -51,6 +51,9 @@ func main() {
 func run() (*driver.DB, error) {
     // What to put in session
     gob.Register(models.Rent{})
+    gob.Register(models.User{})
+    gob.Register(models.Model{})
+    gob.Register(models.RestrictionType{})
 
     // Change to true if in production
     app.InProduction = false
@@ -97,7 +100,7 @@ func run() (*driver.DB, error) {
     // Give access to app config variable inside helpers package
     helpers.NewHelpers(&app)
     // Give access to app config variable inside render package
-    render.NewTemplates(&app)
+    render.NewRenderer(&app)
 
     return db, nil
 }
