@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
+	"time"
 
 	"github.com/sanijo/rent-app/internal/config"
 	"github.com/sanijo/rent-app/internal/driver"
@@ -107,18 +109,48 @@ func (m *Repository) PostRent(w http.ResponseWriter, r *http.Request) {
         return
     }
 
+    sd := r.Form.Get("start_date")
+    ed := r.Form.Get("end_date")
+
+    // convert the date to time.Time type
+    // 2020-01-01 -- 01/02 03:04:05PM '06 -0700
+    layout := "2006-01-02"
+
+    startDate, err := time.Parse(layout, sd)
+    if err != nil {
+        helpers.ServerError(w, err)
+        return
+    }
+
+    endDate, err := time.Parse(layout, ed)
+    if err != nil {
+        helpers.ServerError(w, err)
+        return
+    }
+
+    modelID, err := strconv.Atoi(r.Form.Get("model_id"))
+    if err != nil {
+        helpers.ServerError(w, err)
+        return
+    }
+
     rent := models.Rent{
         FirstName: r.Form.Get("first_name"),
         LastName: r.Form.Get("last_name"),
         Email: r.Form.Get("email"),
         Phone: r.Form.Get("phone"),
+        StartDate: startDate,
+        EndDate: endDate,
+        ModelID: modelID,
     }
 
+    // create a form struct to validate the data
     form := forms.New(r.PostForm)
     form.Required("first_name", "last_name", "email")
     form.MinLength("first_name", 2)
     form.IsEmail("email")
 
+    // if there are any errors, redisplay the form
     if !form.Valid() {
         data := make(map[string]interface{})
         data["rent"] = rent
@@ -127,6 +159,28 @@ func (m *Repository) PostRent(w http.ResponseWriter, r *http.Request) {
             Form: form,
             Data: data,
         })
+        return
+    }
+
+    // insert rent into database
+    rentID, err := m.DB.InsertRent(rent)
+    if err != nil {
+        helpers.ServerError(w, err)
+        return
+    }
+
+    rentRestriction := models.RentRestriction{
+        StartDate: startDate,
+        EndDate: endDate,
+        ModelID: modelID,
+        RentID: rentID,
+        RestrictionID: 1,
+    }
+
+    // insert restriction into database
+    err = m.DB.InsertRentRestriction(rentRestriction)
+    if err != nil {
+        helpers.ServerError(w, err)
         return
     }
 
