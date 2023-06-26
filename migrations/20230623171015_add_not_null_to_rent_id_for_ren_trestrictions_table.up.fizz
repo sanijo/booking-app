@@ -1,0 +1,1 @@
+change_column("rent_restrictions", "rent_id", "integer", {"null": true})

@@ -12,4 +12,5 @@ type DatabaseRepo interface {
     InsertRent(rent models.Rent) (int, error)
     InsertRentRestriction(rentRestriction models.RentRestriction) error
     SearchAvailabilityByDatesAndModelID(start, end time.Time, modelID int) (bool, error)
+    SearchAvailabilityForAllModels(start, end time.Time) ([]models.Model, error)
 }

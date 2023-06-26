@@ -107,7 +107,7 @@ CREATE TABLE public.rent_restrictions (
     start_date date NOT NULL,
     end_date date NOT NULL,
     model_id bigint NOT NULL,
-    rent_id bigint NOT NULL,
+    rent_id integer,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     restriction_id bigint NOT NULL

@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/sanijo/rent-app/internal/config"
 	"github.com/sanijo/rent-app/internal/driver"
 	"github.com/sanijo/rent-app/internal/forms"
@@ -63,7 +64,57 @@ func (m *Repository) CheckAvailability(w http.ResponseWriter, r *http.Request) {
 func (m *Repository) PostAvailability(w http.ResponseWriter, r *http.Request) {
     start := r.Form.Get("start")
     end := r.Form.Get("end")
-    w.Write([]byte(fmt.Sprintf("Start date is %s and end date is %s",start,end)))
+
+    // convert the date to time.Time type
+    // 2020-01-01 -- 01/02 03:04:05PM '06 -0700
+    layout := "2006-01-02"
+
+    startDate, err := time.Parse(layout, start)
+    if err != nil {
+        helpers.ServerError(w, err)
+        return
+    }
+
+    endDate, err := time.Parse(layout, end)
+    if err != nil {
+        helpers.ServerError(w, err)
+        return
+    }
+
+    // get availability
+    availableCarModels, err := m.DB.SearchAvailabilityForAllModels(startDate, endDate)
+    if err != nil {
+        helpers.ServerError(w, err)
+        return
+    }
+
+    // if slice is empty means no availability
+    if len(availableCarModels) == 0 {
+        m.App.Session.Put(r.Context(), "error", "No available vehicles for specified dates")
+        http.Redirect(w, r, "/check-availability", http.StatusSeeOther)
+        return
+    }
+
+    // create a map to store data to be sent to the template
+    data := make(map[string]interface{}) 
+    data["models"] = availableCarModels
+
+    // create a rent struct to store data in session to be available in next page
+    // gob.Register(models.Rent{}) allready in main.go therefore no need to register here
+    // Idea: when user clicks on a model, start and end date are pulled from the
+    // session and id of the chosen model is assigned to the rent struct and
+    // stored in the session. Then rent page is rendered.
+    rent := models.Rent{
+        StartDate: startDate,
+        EndDate: endDate,
+    }
+
+    m.App.Session.Put(r.Context(), "rent", rent)
+
+    // send data to the template
+    render.Template(w, r, "choose-model.page.html", &models.TemplateData{
+        Data: data,
+    })
 }
 
 type jsonResponse struct {
@@ -218,3 +269,29 @@ func (m *Repository) RentSummary(w http.ResponseWriter, r *http.Request) {
         Data: data,
     })
 }
+
+// ChooseModel is choose-model page handler
+func (m *Repository) ChooseModel(w http.ResponseWriter, r *http.Request) {
+    modelID, err := strconv.Atoi(chi.URLParam(r, "id")) 
+    if err != nil {
+        helpers.ServerError(w, err)
+        return
+    }
+
+    // get rent from session and update modelID value. NOTE: Get returns an
+    // interface, so we need to type assert it to models.Rent
+    rent, ok := m.App.Session.Get(r.Context(), "rent").(models.Rent)
+    if !ok {
+        m.App.Session.Put(r.Context(), "error", "Can't get rent from session")
+        http.Redirect(w, r, "/", http.StatusSeeOther)
+        return
+    }
+
+    // update modelID value and save back into session
+    rent.ModelID = modelID
+    m.App.Session.Put(r.Context(), "rent", rent)
+
+    // redirect to rent page
+    http.Redirect(w, r, "/rent", http.StatusSeeOther)
+}
+

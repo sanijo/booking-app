@@ -1,0 +1,19 @@
+{{template "base" .}}
+{{define "title"}}Choose model{{end}}
+{{define "content"}}
+  <div class="container">
+    <div class="row">
+      <div class="col">
+        <h1>Available vehicle models</h1>
+        {{$models := index .Data "models"}}
+
+        <ul>
+          {{range $models}}
+          <li><a href="/choose-model/{{.ID}}">{{.ModelName}}</a></li>
+          {{end}}
+        </ul>
+      </div>
+    </div>
+  </div>
+{{end}}
+
