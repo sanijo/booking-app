@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 	"net/http"
 	"strconv"
 	"time"
@@ -120,13 +120,33 @@ func (m *Repository) PostAvailability(w http.ResponseWriter, r *http.Request) {
 type jsonResponse struct {
     OK bool `json:"ok"`
     Message string `json:"message"`
+    ModelID string `json:"model_id"`
+    StartDate string `json:"start_date"`
+    EndDate string `json:"end_date"`
 }
+
 // PostAvailabilityJSON handles request for availability and sends JSON
 // response
 func (m *Repository) PostAvailabilityJSON(w http.ResponseWriter, r *http.Request) {
+    sd := r.Form.Get("start")
+    ed := r.Form.Get("end")
+
+    layout := "2006-01-02"
+
+    // convert the date to time.Time type
+    startDate, _ := time.Parse(layout, sd)
+    endDate, _ := time.Parse(layout, ed)
+    
+    modelID, _ := strconv.Atoi(r.Form.Get("model_id"))
+
+    available, _ := m.DB.SearchAvailabilityByDatesAndModelID(startDate, endDate, modelID)
+
     resp := jsonResponse {
-        OK: false,
-        Message: "Available",
+        OK: available,
+        Message: "",
+        ModelID: strconv.Itoa(modelID),
+        StartDate: sd,
+        EndDate: ed,
     }
 
     out, err := json.MarshalIndent(resp, "", "    ")
@@ -135,18 +155,49 @@ func (m *Repository) PostAvailabilityJSON(w http.ResponseWriter, r *http.Request
         return
     }
 
-    fmt.Println(string(out))
     w.Header().Set("Content-Type", "application/json")
     w.Write(out)
 }
 
 // Rent is rent page handler
 func (m *Repository) Rent(w http.ResponseWriter, r *http.Request) {
-    var emptyRent models.Rent
+    // get rent struct from session. NOTE: Get returns an
+    // interface, so we need to type assert it to models.Rent
+    rent, ok := m.App.Session.Get(r.Context(), "rent").(models.Rent)
+    if !ok {
+        helpers.ServerError(w, errors.New("can't get rent from session"))
+        http.Redirect(w, r, "/", http.StatusSeeOther)
+        return
+    }
+
+    // get model from database by model id
+    model, err := m.DB.GetModelByID(rent.ModelID)
+    if err != nil {
+        helpers.ServerError(w, err)
+        return
+    }
+    
+    // store model name into rent struct Model field
+    rent.Model.ModelName = model.ModelName
+
+    // store rent struct with model name into session
+    m.App.Session.Put(r.Context(), "rent", rent)
+
+    // convert the date to string type to be able to use it in rent template
+    sd := rent.StartDate.Format("2006-01-02")
+    ed := rent.EndDate.Format("2006-01-02")
+
     data := make(map[string]interface{})
-    data["rent"] = emptyRent
+    data["rent"] = rent
+
+    // create string map (see TemplateData struct in models/models.go)
+    // to store data to be sent to the template
+    stringMap := make(map[string]string)    
+    stringMap["start_date"] = sd
+    stringMap["end_date"] = ed
 
     render.Template(w, r, "rent.page.html", &models.TemplateData{
+        StringMap: stringMap,
         Form: forms.New(nil),
         Data: data,
     })
@@ -154,46 +205,26 @@ func (m *Repository) Rent(w http.ResponseWriter, r *http.Request) {
 
 // PostRent handles the posting of a rent form
 func (m *Repository) PostRent(w http.ResponseWriter, r *http.Request) {
+    // get rent struct from session. NOTE: allready contains star date, end
+    // date, model id and model name
+    rent, ok := m.App.Session.Get(r.Context(), "rent").(models.Rent)
+    if !ok {
+        helpers.ServerError(w, errors.New("can't get rent from session"))
+        http.Redirect(w, r, "/", http.StatusSeeOther)
+        return
+    }
+
     err := r.ParseForm()
     if err != nil {
         helpers.ServerError(w, err)
         return
     }
 
-    sd := r.Form.Get("start_date")
-    ed := r.Form.Get("end_date")
-
-    // convert the date to time.Time type
-    // 2020-01-01 -- 01/02 03:04:05PM '06 -0700
-    layout := "2006-01-02"
-
-    startDate, err := time.Parse(layout, sd)
-    if err != nil {
-        helpers.ServerError(w, err)
-        return
-    }
-
-    endDate, err := time.Parse(layout, ed)
-    if err != nil {
-        helpers.ServerError(w, err)
-        return
-    }
-
-    modelID, err := strconv.Atoi(r.Form.Get("model_id"))
-    if err != nil {
-        helpers.ServerError(w, err)
-        return
-    }
-
-    rent := models.Rent{
-        FirstName: r.Form.Get("first_name"),
-        LastName: r.Form.Get("last_name"),
-        Email: r.Form.Get("email"),
-        Phone: r.Form.Get("phone"),
-        StartDate: startDate,
-        EndDate: endDate,
-        ModelID: modelID,
-    }
+    // update rent struct with data from the form
+    rent.FirstName = r.Form.Get("first_name")
+    rent.LastName = r.Form.Get("last_name")
+    rent.Email = r.Form.Get("email")
+    rent.Phone = r.Form.Get("phone")
 
     // create a form struct to validate the data
     form := forms.New(r.PostForm)
@@ -221,9 +252,9 @@ func (m *Repository) PostRent(w http.ResponseWriter, r *http.Request) {
     }
 
     rentRestriction := models.RentRestriction{
-        StartDate: startDate,
-        EndDate: endDate,
-        ModelID: modelID,
+        StartDate: rent.StartDate,
+        EndDate: rent.EndDate,
+        ModelID: rent.ModelID,
         RentID: rentID,
         RestrictionID: 1,
     }
@@ -235,7 +266,7 @@ func (m *Repository) PostRent(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    // store rent value into session (type enabled in main)
+    // put rent value back into session (type enabled in main)
     m.App.Session.Put(r.Context(), "rent", rent)
     http.Redirect(w, r, "/rent-summary", http.StatusSeeOther)
 }
@@ -265,7 +296,18 @@ func (m *Repository) RentSummary(w http.ResponseWriter, r *http.Request) {
     data := make(map[string]interface{})
     data["rent"] = rent
 
+    // convert the date to string type to be able to use it in rent-summary template
+    sd := rent.StartDate.Format("2006-01-02")
+    ed := rent.EndDate.Format("2006-01-02")
+
+    // create string map (see TemplateData struct in models/models.go)
+    // to store data to be sent to the template
+    stringMap := make(map[string]string)
+    stringMap["start_date"] = sd
+    stringMap["end_date"] = ed
+
     render.Template(w, r, "rent-summary.page.html", &models.TemplateData{
+        StringMap: stringMap,
         Data: data,
     })
 }
@@ -295,3 +337,48 @@ func (m *Repository) ChooseModel(w http.ResponseWriter, r *http.Request) {
     http.Redirect(w, r, "/rent", http.StatusSeeOther)
 }
 
+// RentVehicle is rent-vehicle page handler
+func (m *Repository) RentVehicle(w http.ResponseWriter, r *http.Request) {
+    // grab id, s, and e values from url
+    modelID, err := strconv.Atoi(r.URL.Query().Get("id"))
+    if err != nil {
+        helpers.ServerError(w, err)
+        return
+    }
+
+    sd := r.URL.Query().Get("s")
+    ed := r.URL.Query().Get("e")
+
+    // convert the date to time.Time type to be able to use it in rent-vehicle template
+    startDate, err := time.Parse("2006-01-02", sd)
+    if err != nil {
+        helpers.ServerError(w, err)
+        return
+    }
+    endDate, err := time.Parse("2006-01-02", ed)
+    if err != nil {
+        helpers.ServerError(w, err)
+        return
+    }
+
+    // get model from database
+    model, err := m.DB.GetModelByID(modelID)
+    if err != nil {
+        helpers.ServerError(w, err)
+        return
+    }
+    
+    // create rent struct to store data to be sent to put into session
+    var rent models.Rent
+
+    rent.ModelID = modelID
+    rent.Model.ModelName = model.ModelName
+    rent.StartDate = startDate
+    rent.EndDate = endDate
+
+    // put rent value into session (type enabled in main)
+    m.App.Session.Put(r.Context(), "rent", rent)
+
+    // redirect to rent page
+    http.Redirect(w, r, "/rent", http.StatusSeeOther)
+}

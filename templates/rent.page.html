@@ -6,53 +6,77 @@
             <div class="col-md-3"></div>
             <div class="col-md-6">
                 <h1 class="mt-5">Rent a Vehicle</h1>
-                {{$ren := index .Data "rent"}}
+    
+                <p><strong>Rent details:</strong><br>
+
+                {{$rent := index .Data "rent"}}
+
+                <hr>
+                <table class="table table-striped">
+                  <thead></thead>
+                  <tbody>
+                    <tr>
+                      <td>Vehicle:</td>
+                      <td>Tesla {{$rent.Model.ModelName}}</td>
+                    </tr>
+                    <tr>
+                      <td>Pick-up date:</td>
+                      <td>{{index .StringMap "start_date"}}</td>
+                    </tr>
+                    <tr>
+                      <td>Return date:</td>
+                      <td>{{index .StringMap "end_date"}}</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <hr>
+                </p>
+
+                <p><strong>Fill out the form to complete order:</strong></p>
+
                 <form action="/rent" method="post" class="" novalidate>
+
                   <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
-                  <div class="form-group mt-5">
+                  <input type="hidden" name="start_date" value="{{index .StringMap "start_date"}}">
+                  <input type="hidden" name="end_date" value="{{index .StringMap "end_date"}}">
+                  <input type="hidden" name="model_id" value="{{$rent.ModelID}}">
+                  <input type="hidden" name="model_name" value="{{$rent.Model.ModelName}}">
+
+                  <div class="form-group mt-1">
                      <label for="first_name">First name:</label>
                      {{with .Form.Errors.Get "first_name"}}
                        <label class="text-danger">{{.}}</label>
                      {{end}}
                      <input type="text" name="first_name" id="first_name"
-                     class="form-control {{with .Form.Errors.Get "first_name"}} is-invalid {{end}}" value="{{$ren.FirstName}}" required autocomplete="off">
+                     class="form-control {{with .Form.Errors.Get "first_name"}} is-invalid {{end}}" value="{{$rent.FirstName}}" required autocomplete="off">
                   </div>
+
                   <div class="form-group">
                      <label for="last_name">Last name:</label>
                      {{with .Form.Errors.Get "last_name"}}
                        <label class="text-danger">{{.}}</label>
                      {{end}}
                      <input type="text" name="last_name" id="last_name"
-                     class="form-control {{with .Form.Errors.Get "last_name"}} is-invalid {{end}}" value="{{$ren.LastName}}" required autocomplete="off">
+                     class="form-control {{with .Form.Errors.Get "last_name"}} is-invalid {{end}}" value="{{$rent.LastName}}" required autocomplete="off">
                   </div>
+
                   <div class="form-group">
                      <label for="email">Email:</label>
                      {{with .Form.Errors.Get "email"}}
                        <label class="text-danger">{{.}}</label>
                      {{end}}
                      <input type="email" name="email" id="email"
-                     class="form-control {{with .Form.Errors.Get "email"}} is-invalid {{end}}" value="{{$ren.Email}}" required autocomplete="off">
+                     class="form-control {{with .Form.Errors.Get "email"}} is-invalid {{end}}" value="{{$rent.Email}}" required autocomplete="off">
                   </div>
+
                   <div class="form-group">
                      <label for="phone">Phone number:</label>
                      {{with .Form.Errors.Get "phone"}}
                        <label class="text-danger">{{.}}</label>
                      {{end}}
                      <input type="text" name="phone" id="phone"
-                     class="form-control {{with .Form.Errors.Get "phone"}} is-invalid {{end}}" value="{{$ren.Phone}}" required autocomplete="off">
+                     class="form-control {{with .Form.Errors.Get "phone"}} is-invalid {{end}}" value="{{$rent.Phone}}" required autocomplete="off">
                   </div>
-
-                  <div class="form-group">
-                     <label for="start_date">Start date:</label>
-                     <input type="text" name="start_date" id="start_date" class="form-control" required autocomplete="off">
-                  </div>
-
-                  <div class="form-group">
-                     <label for="end_date">End date:</label>
-                     <input type="text" name="end_date" id="end_date" class="form-control" required autocomplete="off">
-                  </div>
-
-                  <input type="hidden" name="model_id" value="1">
 
                   <hr>
                   <button type="submit" class="btn btn-primary">Make reservation</button>

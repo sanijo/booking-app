@@ -62,7 +62,72 @@
                   </form>
                 `;
 
-                attention.custom({html: html, title: "Choose pick up and return date",});
+                attention.custom({
+                    html: html, 
+                    title: "Choose pick up and return date",
+                    
+                    didOpen: () => {
+                        const elemStart = Swal.getPopup().querySelector('#start');
+                        const elemEnd = Swal.getPopup().querySelector('#end');
+                        const rangepickerStart = new Datepicker(elemStart, {
+                            // ...options
+                            format: "yyyy-mm-dd",
+                            showOnFocus: true,
+                            orientation: "top",
+                            todayHighlight: true,
+                            minDate: new Date(),
+                            clearButton: true,
+                            autohide: true,
+                        });
+                        const rangepickerEnd = new Datepicker(elemEnd, {
+                            // ...options
+                            format: "yyyy-mm-dd",
+                            orientation: "top",
+                            showOnFocus: true,
+                            todayHighlight: true,
+                            minDate: new Date(),
+                            clearButton: true,
+                            autohide: true,
+                        });
+                    },
+
+                    callback: function(result) {
+
+                        let form =
+                            document.getElementById("check-availability-form");
+                        let formData = new FormData(form);
+                        formData.append("csrf_token", "{{.CSRFToken}}");
+                        formData.append("model_id", "2");
+
+                        fetch("/check-availability-json", {
+                            method: "post",
+                            body: formData,
+                        })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.ok) {
+                                    attention.custom({
+                                        icon: 'success',
+                                        showConfirmButton: false,
+                                        html: '<p>Vehicle is available for the selected dates!</p>'
+                                            + '<p><a href="/rent-vehicle?id='
+                                            + data.model_id
+                                            + '&s='
+                                            + data.start_date
+                                            + '&e='
+                                            + data.end_date
+                                            + '" class="btn btn-primary">'
+                                            + 'Rent now</a></p>',
+                                    })
+                                } else {
+                                    attention.error({
+                                        message: "No availability",
+                                    });
+
+                                }
+                            })
+                    }
+                });
             })
     </script>
 {{end}}

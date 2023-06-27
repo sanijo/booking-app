@@ -2,7 +2,7 @@
 {{define "title"}}Summary{{end}}
 {{define "content"}}
 
-    {{$ren := index .Data "rent"}}
+    {{$rent := index .Data "rent"}}
 
     <div class="container">
       <div class="row">
@@ -15,23 +15,27 @@
             <tbody>
               <tr>
                 <td>Name:</td>
-                <td>{{$ren.FirstName}} {{$ren.LastName}}</td>
+                <td>{{$rent.FirstName}} {{$rent.LastName}}</td>
+              </tr>
+              <tr>
+                <td>Vehicle:</td>
+                <td>Tesla {{$rent.Model.ModelName}}</td>
               </tr>
               <tr>
                 <td>Pick up date:</td>
-                <td></td>
+                <td>{{index .StringMap "start_date"}}</td>
               </tr>
               <tr>
                 <td>Return date:</td>
-                <td></td>
+                <td>{{index .StringMap "end_date"}}</td>
               </tr>
               <tr>
                 <td>Email:</td>
-                <td>{{$ren.Email}}</td>
+                <td>{{$rent.Email}}</td>
               </tr>
               <tr>
                 <td>Phone:</td>
-                <td>{{$ren.Phone}}</td>
+                <td>{{$rent.Phone}}</td>
               </tr>
             </tbody>
           </table>

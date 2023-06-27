@@ -154,3 +154,33 @@ func (m *postgresDbRepo) SearchAvailabilityForAllModels(start, end time.Time) ([
 
     return availableCarModels, nil
 }
+
+// GetModelByID returns a model by id.
+func (m *postgresDbRepo) GetModelByID(id int) (models.Model, error) {
+    ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+    defer cancel()
+
+    var model models.Model
+
+    query := `
+        select 
+            id, model_name, created_at, updated_at 
+        from 
+            models 
+        where 
+            id = $1`
+
+    row := m.DB.QueryRowContext(ctx, query, id)
+
+    err := row.Scan(
+        &model.ID,
+        &model.ModelName,
+        &model.CreatedAt,
+        &model.UpdatedAt,
+    )
+    if err != nil {
+        return model, err
+    }
+
+    return model, nil
+}
