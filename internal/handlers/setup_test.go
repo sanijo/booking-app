@@ -57,7 +57,7 @@ func getRoutes() http.Handler {
     app.TemplateCache = tc
     app.UseCache = true
 
-    repo := NewRepo(&app)
+    repo := NewTestRepo(&app)
     NewHandlers(repo)
     
     // Give access to app config variable inside render package
