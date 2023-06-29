@@ -1,6 +1,7 @@
 package dbrepo
 
 import (
+	"errors"
 	"time"
 
 	"github.com/sanijo/rent-app/internal/models"
@@ -39,5 +40,10 @@ func (m *testDBRepo) SearchAvailabilityForAllModels(start, end time.Time) ([]mod
 // GetModelByID returns a model by id.
 func (m *testDBRepo) GetModelByID(id int) (models.Model, error) {
     var model models.Model
+
+    if id > 2 {
+        return model, errors.New("some error")
+    }
+
     return model, nil
 }

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"testing"
 	"time"
 
 	"github.com/alexedwards/scs/v2"
@@ -25,7 +26,7 @@ var session *scs.SessionManager
 var pathToTemplates = "./../../templates"
 var functions = template.FuncMap{}
 
-func getRoutes() http.Handler {
+func TestMain(m *testing.M) {
     // What to put in session
     gob.Register(models.Rent{})
 
@@ -63,6 +64,11 @@ func getRoutes() http.Handler {
     // Give access to app config variable inside render package
     render.NewRenderer(&app)
 
+    // Run tests
+    os.Exit(m.Run())
+}
+
+func getRoutes() http.Handler {
     mux := chi.NewRouter()
 
     mux.Use(middleware.Recoverer)

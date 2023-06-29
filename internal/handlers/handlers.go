@@ -173,15 +173,16 @@ func (m *Repository) Rent(w http.ResponseWriter, r *http.Request) {
     // interface, so we need to type assert it to models.Rent
     rent, ok := m.App.Session.Get(r.Context(), "rent").(models.Rent)
     if !ok {
-        helpers.ServerError(w, errors.New("can't get rent from session"))
-        http.Redirect(w, r, "/", http.StatusSeeOther)
+        m.App.Session.Put(r.Context(), "error", "Can't get rent from session")
+        http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
         return
     }
 
     // get model from database by model id
     model, err := m.DB.GetModelByID(rent.ModelID)
     if err != nil {
-        helpers.ServerError(w, err)
+        m.App.Session.Put(r.Context(), "error", "Can't get model from database")
+        http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
         return
     }
     
@@ -213,7 +214,7 @@ func (m *Repository) Rent(w http.ResponseWriter, r *http.Request) {
 
 // PostRent handles the posting of a rent form
 func (m *Repository) PostRent(w http.ResponseWriter, r *http.Request) {
-    // get rent struct from session. NOTE: allready contains star date, end
+    // get rent struct from session. NOTE: allready contains start date, end
     // date, model id and model name
     rent, ok := m.App.Session.Get(r.Context(), "rent").(models.Rent)
     if !ok {
