@@ -28,8 +28,10 @@
 
   <script>
     function redirectToModel() {
-      var selectedModel = document.getElementById("model").value;
-      window.location.href = "/choose-model/" + selectedModel;
+        // Get the selected model id
+        var selectedModel = document.getElementById("model").value;
+        // Redirect to the chosen model page
+        window.location.href = "/choose-model/" + selectedModel;
     }
   </script>
 

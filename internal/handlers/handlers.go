@@ -68,8 +68,18 @@ func (m *Repository) CheckAvailability(w http.ResponseWriter, r *http.Request) {
     render.Template(w, r, "check-availability.page.html", &models.TemplateData{})
 }
 
-// PostkAvailability is check-availability page handler
+// PostAvailability is check-availability page handler. After user submits
+// the form, this handler is called.
 func (m *Repository) PostAvailability(w http.ResponseWriter, r *http.Request) {
+    // parse the form
+    err := r.ParseForm()
+    if err != nil {
+        m.App.Session.Put(r.Context(), "error", "Can't parse form")
+        http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+        return
+    }
+
+    // get the form values
     start := r.Form.Get("start")
     end := r.Form.Get("end")
 
@@ -79,13 +89,15 @@ func (m *Repository) PostAvailability(w http.ResponseWriter, r *http.Request) {
 
     startDate, err := time.Parse(layout, start)
     if err != nil {
-        helpers.ServerError(w, err)
+        m.App.Session.Put(r.Context(), "error", "Can't parse start date")
+        http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
         return
     }
 
     endDate, err := time.Parse(layout, end)
     if err != nil {
-        helpers.ServerError(w, err)
+        m.App.Session.Put(r.Context(), "error", "Can't parse end date")
+        http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
         return
     }
 
@@ -225,7 +237,8 @@ func (m *Repository) PostRent(w http.ResponseWriter, r *http.Request) {
 
     err := r.ParseForm()
     if err != nil {
-        helpers.ServerError(w, err)
+        m.App.Session.Put(r.Context(), "error", "Can't parse form")
+        http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
         return
     }
 
@@ -243,10 +256,21 @@ func (m *Repository) PostRent(w http.ResponseWriter, r *http.Request) {
 
     // if there are any errors, redisplay the form
     if !form.Valid() {
+        // convert the date to string type to be able to use it in rent-summary template
+        sd := rent.StartDate.Format("2006-01-02")
+        ed := rent.EndDate.Format("2006-01-02")
+
+        // create string map (see TemplateData struct in models/models.go)
+        // to store data to be sent to the template
+        stringMap := make(map[string]string)
+        stringMap["start_date"] = sd
+        stringMap["end_date"] = ed
+
         data := make(map[string]interface{})
         data["rent"] = rent
 
         render.Template(w, r, "rent.page.html", &models.TemplateData{
+            StringMap: stringMap,
             Form: form,
             Data: data,
         })
@@ -260,6 +284,7 @@ func (m *Repository) PostRent(w http.ResponseWriter, r *http.Request) {
         return
     }
 
+    // create rent restriction struct
     rentRestriction := models.RentRestriction{
         StartDate: rent.StartDate,
         EndDate: rent.EndDate,
@@ -323,6 +348,7 @@ func (m *Repository) RentSummary(w http.ResponseWriter, r *http.Request) {
 
 // ChooseModel is choose-model page handler
 func (m *Repository) ChooseModel(w http.ResponseWriter, r *http.Request) {
+    // get model id from url
     modelID, err := strconv.Atoi(chi.URLParam(r, "id")) 
     if err != nil {
         helpers.ServerError(w, err)

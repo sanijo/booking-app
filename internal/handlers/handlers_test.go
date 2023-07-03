@@ -115,7 +115,8 @@ func TestRepository_Rent(t *testing.T) {
     }
 }
 
-func TestRepository_PostRent(t *testing.T) {
+func TestRepository_PostAvailability(t *testing.T) {
+
 }
 
 func getCtx(r *http.Request) context.Context {
