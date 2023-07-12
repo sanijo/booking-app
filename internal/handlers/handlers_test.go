@@ -81,12 +81,10 @@ func TestRepository_Rent(t *testing.T) {
     r, _ := http.NewRequest("GET", "/rent", nil)
     ctx := getCtx(r)
     r = r.WithContext(ctx)
-
     rr := httptest.NewRecorder()
     session.Put(ctx, "rent", rent)
     handler := http.HandlerFunc(Repo.Rent)
     handler.ServeHTTP(rr, r)
-
     if rr.Code != http.StatusOK {
         t.Errorf("Rent handler returned wrong response code: got %d, wanted %d", rr.Code, http.StatusOK)
     }
@@ -97,9 +95,8 @@ func TestRepository_Rent(t *testing.T) {
     r = r.WithContext(ctx)
     rr = httptest.NewRecorder()
     handler.ServeHTTP(rr, r)
-
     if rr.Code != http.StatusTemporaryRedirect {
-        t.Errorf("Rent handler returned wrong response code: got %d, wanted %d", rr.Code, http.StatusOK)
+        t.Errorf("Rent handler returned wrong response code: got %d, wanted %d", rr.Code, http.StatusTemporaryRedirect)
     }
 
     // test for case where there is no model 
@@ -110,9 +107,8 @@ func TestRepository_Rent(t *testing.T) {
     rent.ModelID = 3
     session.Put(ctx, "rent", rent)
     handler.ServeHTTP(rr, r)
-
     if rr.Code != http.StatusTemporaryRedirect {
-        t.Errorf("Rent handler returned wrong response code: got %d, wanted %d", rr.Code, http.StatusOK)
+        t.Errorf("Rent handler returned wrong response code: got %d, wanted %d", rr.Code, http.StatusTemporaryRedirect)
     }
 }
 
@@ -161,11 +157,9 @@ func TestRepository_PostRent(t *testing.T) {
     r = r.WithContext(ctx)
     r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
     rr = httptest.NewRecorder()
-    handler = http.HandlerFunc(Repo.PostRent)
-    session.Put(ctx, "rent", nil)
     handler.ServeHTTP(rr, r)
-    if rr.Code != http.StatusSeeOther {
-        t.Errorf("PostRent handler returned wrong response code for missing rent in session: got %d, wanted %d", rr.Code, http.StatusSeeOther)
+    if rr.Code != http.StatusTemporaryRedirect {
+        t.Errorf("Rent handler returned wrong response code: got %d, wanted %d", rr.Code, http.StatusTemporaryRedirect)
     }
 
     // test case when there is no post body data
@@ -200,11 +194,85 @@ func TestRepository_PostRent(t *testing.T) {
     handler = http.HandlerFunc(Repo.PostRent)
     session.Put(ctx, "rent", rent)
     handler.ServeHTTP(rr, r)
-    if rr.Code != http.StatusOK {
-        t.Errorf("PostRent handler returned wrong response code for invalid form: got %d, wanted %d", rr.Code, http.StatusOK)
+    if rr.Code != http.StatusSeeOther {
+        t.Errorf("PostRent handler returned wrong response code for invalid form: got %d, wanted %d", rr.Code, http.StatusSeeOther)
+    }
+
+    // test case for inserting rent into database using test-db
+    // dummy rent struct for testing
+    rent = models.Rent{
+        FirstName: "John",
+        LastName: "Doe",
+        Email: "john@doe.com",
+        Phone: "+38599534256",
+        ModelID: 3,
+        Model: models.Model{
+            ID: 3,
+            ModelName: "Model 3",
+        },
+    }
+
+    // post data necessary to create request
+    reqBody = "start_date=2050-01-01"
+    reqBody += "&end_date=2050-01-02"
+    reqBody += "&first_name=John"
+    reqBody += "&last_name=Doe"
+    reqBody += "&email=john@doe.com"
+    reqBody += "&phone=+38599534256"
+    reqBody += "&model_id=3"
+
+    r, _ = http.NewRequest("POST", "/rent", strings.NewReader(reqBody))
+    ctx = getCtx(r)
+    r = r.WithContext(ctx)
+    r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+    rr = httptest.NewRecorder()
+    handler = http.HandlerFunc(Repo.PostRent)
+    // uddate session with new rent struct
+    session.Put(ctx, "rent", rent)
+    handler.ServeHTTP(rr, r)
+    if rr.Code != http.StatusSeeOther {
+        t.Errorf("PostRent handler returned wrong response code for inserting rent into database: got %d, wanted %d", rr.Code, http.StatusSeeOther)
+    }
+
+    // test case for inserting rent restriction into database using test-db
+    // dummy rent struct for testing
+    rent = models.Rent{
+        FirstName: "John",
+        LastName: "Doe",
+        Email: "john@doe.com",
+        Phone: "+38599534256",
+        ModelID: 4,
+        Model: models.Model{
+            ID: 4,
+            ModelName: "Model 3",
+        },
+    }
+
+    // post data necessary to create request
+    reqBody = "start_date=2050-01-01"
+    reqBody += "&end_date=2050-01-02"
+    reqBody += "&first_name=John"
+    reqBody += "&last_name=Doe"
+    reqBody += "&email=john@doe.com"
+    reqBody += "&phone=+38599534256"
+    reqBody += "&model_id=4"
+
+    r, _ = http.NewRequest("POST", "/rent", strings.NewReader(reqBody))
+    ctx = getCtx(r)
+    r = r.WithContext(ctx)
+    r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+    rr = httptest.NewRecorder()
+    handler = http.HandlerFunc(Repo.PostRent)
+    // uddate session with new rent struct
+    session.Put(ctx, "rent", rent)
+    rent = session.Get(ctx, "rent").(models.Rent)
+    handler.ServeHTTP(rr, r)
+    if rr.Code != http.StatusSeeOther {
+        t.Errorf("PostRent handler returned wrong response code for inserting rent restriction into database: got %d, wanted %d", rr.Code, http.StatusSeeOther)
     }
 }
 
+// getCtx is a helper function that returns a request with a context
 func getCtx(r *http.Request) context.Context {
     ctx, err := session.Load(r.Context(), r.Header.Get("X-Session"))
     if err != nil {

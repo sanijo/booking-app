@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"errors"
 	"net/http"
 	"strconv"
 	"time"
@@ -230,8 +229,8 @@ func (m *Repository) PostRent(w http.ResponseWriter, r *http.Request) {
     // date, model id and model name
     rent, ok := m.App.Session.Get(r.Context(), "rent").(models.Rent)
     if !ok {
-        helpers.ServerError(w, errors.New("can't get rent from session"))
-        http.Redirect(w, r, "/", http.StatusSeeOther)
+        m.App.Session.Put(r.Context(), "error", "Can't get rent from session")
+        http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
         return
     }
 
@@ -268,6 +267,8 @@ func (m *Repository) PostRent(w http.ResponseWriter, r *http.Request) {
 
         data := make(map[string]interface{})
         data["rent"] = rent
+
+        http.Error(w, "Invalid form submission", http.StatusSeeOther)
 
         render.Template(w, r, "rent.page.html", &models.TemplateData{
             StringMap: stringMap,

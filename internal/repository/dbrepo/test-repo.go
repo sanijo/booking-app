@@ -15,12 +15,21 @@ func (m *testDBRepo) AllUsers() bool {
 // InsertRent inserts a rent into the database after data is obtained from the
 // form.
 func (m *testDBRepo) InsertRent(rent models.Rent) (int, error) {
+    // If the rent modelID is greater than 3, return an error    
+    if rent.ModelID == 3 {
+        return 0, errors.New("some error")
+    }
     return 1, nil
 }
 
 // InsertRentRestriction inserts a rent restriction into the database after data 
 // is obtained from the form.
 func (m *testDBRepo) InsertRentRestriction(rentRestriction models.RentRestriction) error {
+    // If the rent restrictionID is greater than 3, return an error 
+    if rentRestriction.ModelID == 4 {
+        return errors.New("some error")
+    }
+
     return nil
 }
 
