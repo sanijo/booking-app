@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/sanijo/rent-app/internal/models"
@@ -115,8 +116,93 @@ func TestRepository_Rent(t *testing.T) {
     }
 }
 
-func TestRepository_PostAvailability(t *testing.T) {
+func TestRepository_PostRent(t *testing.T) {
+    // dummy rent struct for testing
+    rent := models.Rent{
+        FirstName: "John",
+        LastName: "Doe",
+        Email: "john@doe.com",
+        Phone: "+38599534256",
+        ModelID: 1,
+        Model: models.Model{
+            ID: 1,
+            ModelName: "Model 3",
+        },
+    }
 
+    // post data necessary to create request
+    reqBody := "start_date=2050-01-01"
+    reqBody += "&end_date=2050-01-02"
+    reqBody += "&first_name=John"
+    reqBody += "&last_name=Doe"
+    reqBody += "&email=john@doe.com"
+    reqBody += "&phone=+38599534256"
+    reqBody += "&model_id=1"
+
+    // test case when there is post body data
+    r, _ := http.NewRequest("POST", "/rent", strings.NewReader(reqBody))
+    ctx := getCtx(r)
+    r = r.WithContext(ctx)
+    // set the header for the request (not necessary for this test but it is 
+    // good practice). It is information to the server about the request type.
+    // In this case it says that it is form post request.
+    r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+    rr := httptest.NewRecorder()
+    handler := http.HandlerFunc(Repo.PostRent)
+    session.Put(ctx, "rent", rent)
+    handler.ServeHTTP(rr, r)
+    if rr.Code != http.StatusSeeOther {
+        t.Errorf("PostRent handler returned wrong response code: got %d, wanted %d", rr.Code, http.StatusSeeOther)
+    }
+
+    // test case when there is no rent in session
+    r, _ = http.NewRequest("POST", "/rent", strings.NewReader(reqBody))
+    ctx = getCtx(r)
+    r = r.WithContext(ctx)
+    r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+    rr = httptest.NewRecorder()
+    handler = http.HandlerFunc(Repo.PostRent)
+    session.Put(ctx, "rent", nil)
+    handler.ServeHTTP(rr, r)
+    if rr.Code != http.StatusSeeOther {
+        t.Errorf("PostRent handler returned wrong response code for missing rent in session: got %d, wanted %d", rr.Code, http.StatusSeeOther)
+    }
+
+    // test case when there is no post body data
+    r, _ = http.NewRequest("POST", "/rent", nil)
+    ctx = getCtx(r)
+    r = r.WithContext(ctx)
+    // set the header for the request (not necessary for this test but it is 
+    // good practice). It is information to the server about the request type.
+    // In this case it says that it is form post request.
+    r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+    rr = httptest.NewRecorder()
+    handler = http.HandlerFunc(Repo.PostRent)
+    session.Put(ctx, "rent", rent)
+    handler.ServeHTTP(rr, r)
+    if rr.Code != http.StatusTemporaryRedirect {
+        t.Errorf("PostRent handler returned wrong response code for missing post body: got %d, wanted %d", rr.Code, http.StatusTemporaryRedirect)
+    }
+
+    // test case when the form is not valid
+    reqBody = "start_date=invalid"
+    reqBody += "&end_date=invalid"
+    reqBody += "&first_name=John"
+    reqBody += "&last_name=Doe"
+    reqBody += "&phone=+38599534256"
+    reqBody += "&model_id=1"
+
+    r, _ = http.NewRequest("POST", "/rent", strings.NewReader(reqBody))
+    ctx = getCtx(r)
+    r = r.WithContext(ctx)
+    r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+    rr = httptest.NewRecorder()
+    handler = http.HandlerFunc(Repo.PostRent)
+    session.Put(ctx, "rent", rent)
+    handler.ServeHTTP(rr, r)
+    if rr.Code != http.StatusOK {
+        t.Errorf("PostRent handler returned wrong response code for invalid form: got %d, wanted %d", rr.Code, http.StatusOK)
+    }
 }
 
 func getCtx(r *http.Request) context.Context {

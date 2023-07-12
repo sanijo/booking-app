@@ -280,7 +280,8 @@ func (m *Repository) PostRent(w http.ResponseWriter, r *http.Request) {
     // insert rent into database
     rentID, err := m.DB.InsertRent(rent)
     if err != nil {
-        helpers.ServerError(w, err)
+        m.App.Session.Put(r.Context(), "error", "Can't insert rent into database")
+        http.Redirect(w, r, "/", http.StatusSeeOther)
         return
     }
 
@@ -296,7 +297,8 @@ func (m *Repository) PostRent(w http.ResponseWriter, r *http.Request) {
     // insert restriction into database
     err = m.DB.InsertRentRestriction(rentRestriction)
     if err != nil {
-        helpers.ServerError(w, err)
+        m.App.Session.Put(r.Context(), "error", "Can't insert rent restriction into database")
+        http.Redirect(w, r, "/", http.StatusSeeOther)
         return
     }
 
