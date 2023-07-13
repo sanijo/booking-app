@@ -68,47 +68,86 @@ func TestHandlers(t *testing.T) {
     }
 }
 
-func TestRepository_Rent(t *testing.T) {
-    // test case when there is rent in session
-    rent := models.Rent{
-        ModelID: 1,
-        Model: models.Model{
-            ID: 1,
-            ModelName: "Model 3",
+// data for the Rent handler, /rent route 
+var rentTests = []struct {
+    name string
+    rent models.Rent
+    expectedStatusCode int
+    expectedLocation string 
+    expectedHTML string
+}{
+    {
+        name: "rent in session",
+        rent: models.Rent{
+            ModelID: 1,
+            Model: models.Model{
+                ID: 1,
+                ModelName: "Model 3",
+            },
         },
-    }
+        expectedStatusCode: http.StatusOK,
+        expectedHTML: `action="/rent"`,
+    },
+    {
+        name: "no rent in session",
+        rent: models.Rent{},
+        expectedStatusCode: http.StatusTemporaryRedirect,
+        expectedLocation: "/",
+        expectedHTML: "",
+    },
+    {
+        name: "non existent model",
+        rent: models.Rent{
+            ModelID: 3,
+            Model: models.Model{
+                ID: 3,
+                ModelName: "Model 3",
+            },
+        },
+        expectedStatusCode: http.StatusTemporaryRedirect,
+        expectedLocation: "/",
+        expectedHTML: "",
+    },
+}
 
-    r, _ := http.NewRequest("GET", "/rent", nil)
-    ctx := getCtx(r)
-    r = r.WithContext(ctx)
-    rr := httptest.NewRecorder()
-    session.Put(ctx, "rent", rent)
-    handler := http.HandlerFunc(Repo.Rent)
-    handler.ServeHTTP(rr, r)
-    if rr.Code != http.StatusOK {
-        t.Errorf("Rent handler returned wrong response code: got %d, wanted %d", rr.Code, http.StatusOK)
-    }
+// TestRent tests the Rent handler  
+func TestRent(t *testing.T) {
+    for _, e := range rentTests {
+        // create request
+        r, _ := http.NewRequest("GET", "/rent", nil)
+        // create context
+        ctx := getCtx(r)
+        // add context to request
+        r = r.WithContext(ctx)
 
-    // test case when there is no rent in session
-    r, _ = http.NewRequest("GET", "/rent", nil)
-    ctx = getCtx(r)
-    r = r.WithContext(ctx)
-    rr = httptest.NewRecorder()
-    handler.ServeHTTP(rr, r)
-    if rr.Code != http.StatusTemporaryRedirect {
-        t.Errorf("Rent handler returned wrong response code: got %d, wanted %d", rr.Code, http.StatusTemporaryRedirect)
-    }
+        // create recorder
+        rr := httptest.NewRecorder()
+        if e.rent.ModelID > 0 {
+            session.Put(ctx, "rent", e.rent)
+        }
 
-    // test for case where there is no model 
-    r, _ = http.NewRequest("GET", "/rent", nil)
-    ctx = getCtx(r)
-    r = r.WithContext(ctx)
-    rr = httptest.NewRecorder()
-    rent.ModelID = 3
-    session.Put(ctx, "rent", rent)
-    handler.ServeHTTP(rr, r)
-    if rr.Code != http.StatusTemporaryRedirect {
-        t.Errorf("Rent handler returned wrong response code: got %d, wanted %d", rr.Code, http.StatusTemporaryRedirect)
+        handler := http.HandlerFunc(Repo.Rent)
+        handler.ServeHTTP(rr, r)
+
+        // test for status code
+        if rr.Code != e.expectedStatusCode {
+            t.Errorf("for %s, expected %d but got %d", e.name, e.expectedStatusCode, rr.Code)
+        }
+
+        // test for location    
+        if e.expectedLocation != "" {
+            headers := rr.Result().Header
+            if headers.Get("Location") != e.expectedLocation {
+                t.Errorf("for %s, expected %s but got %s", e.name, e.expectedLocation, headers.Get("Location"))
+            }
+        }
+
+        // test for expected HTML
+        if e.expectedHTML != "" {
+            if !strings.Contains(rr.Body.String(), e.expectedHTML) {
+                t.Errorf("for %s, expected %s but got %s", e.name, e.expectedHTML, rr.Body.String())
+            }
+        }
     }
 }
 
