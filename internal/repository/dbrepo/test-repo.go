@@ -36,13 +36,39 @@ func (m *testDBRepo) InsertRentRestriction(rentRestriction models.RentRestrictio
 // SearchAvailabilityByDatesByModelID returns true if availability exists for
 // modelID, and false if no availability exists.
 func (m *testDBRepo) SearchAvailabilityByDatesAndModelID(start, end time.Time, modelID int) (bool, error) {
-    return false, nil
+    // If the start date is equal to 2021-01-01, return false and nil
+    layout := "2006-01-02"
+    date, _ := time.Parse(layout, "2021-01-01")
+    if start == date {
+        return false, nil
+    }
+
+    return true, nil
 }
     
 // SearchAvailabilityForAllModels returns a slice of available models if any,
 // for given start and end dates.
 func (m *testDBRepo) SearchAvailabilityForAllModels(start, end time.Time) ([]models.Model, error) {
     var availableCarModels []models.Model
+    // If the start date is equal to 2021-01-01, return an error 
+    layout := "2006-01-02"
+    date, _ := time.Parse(layout, "2021-01-01")
+    if start == date {
+        return availableCarModels, errors.New("date equal to 2021-01-01, test error")
+    }
+    // If the start date is equal to 2022-01-02, return availableCarModels with 
+    // modelID 1 and 2
+    date, _ = time.Parse(layout, "2022-01-02")
+    if start == date {
+        availableCarModels = append(availableCarModels, models.Model{
+            ID: 1,
+        })
+        availableCarModels = append(availableCarModels, models.Model{
+            ID: 2,
+        })
+        return availableCarModels, nil
+    }
+
     return availableCarModels, nil
 }
 

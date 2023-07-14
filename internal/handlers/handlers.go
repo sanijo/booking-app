@@ -103,7 +103,8 @@ func (m *Repository) PostAvailability(w http.ResponseWriter, r *http.Request) {
     // get availability
     availableCarModels, err := m.DB.SearchAvailabilityForAllModels(startDate, endDate)
     if err != nil {
-        helpers.ServerError(w, err)
+        m.App.Session.Put(r.Context(), "error", "Can't get availability for all models")
+        http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
         return
     }
 
@@ -147,6 +148,21 @@ type jsonResponse struct {
 // PostAvailabilityJSON handles request for availability and sends JSON
 // response
 func (m *Repository) PostAvailabilityJSON(w http.ResponseWriter, r *http.Request) {
+    // parse the form
+    err := r.ParseForm()
+    if err != nil {
+        // if there is an error, send JSON response
+        resp := jsonResponse {
+            OK: false,
+            Message: "Can't parse form",
+        }
+
+        out, _ := json.MarshalIndent(resp, "", "    ")
+        w.Header().Set("Content-Type", "application/json")
+        w.Write(out)
+        return
+    }
+
     sd := r.Form.Get("start")
     ed := r.Form.Get("end")
 
@@ -158,7 +174,19 @@ func (m *Repository) PostAvailabilityJSON(w http.ResponseWriter, r *http.Request
     
     modelID, _ := strconv.Atoi(r.Form.Get("model_id"))
 
-    available, _ := m.DB.SearchAvailabilityByDatesAndModelID(startDate, endDate, modelID)
+    available, err := m.DB.SearchAvailabilityByDatesAndModelID(startDate, endDate, modelID)
+    if err != nil {
+        // if there is database error, send JSON response
+        resp := jsonResponse {
+            OK: false,
+            Message: "Error querying database",
+        }
+
+        out, _ := json.MarshalIndent(resp, "", "    ")
+        w.Header().Set("Content-Type", "application/json")
+        w.Write(out)
+        return
+    }
 
     resp := jsonResponse {
         OK: available,
@@ -168,11 +196,8 @@ func (m *Repository) PostAvailabilityJSON(w http.ResponseWriter, r *http.Request
         EndDate: ed,
     }
 
-    out, err := json.MarshalIndent(resp, "", "    ")
-    if err != nil {
-        helpers.ServerError(w, err)
-        return
-    }
+    // removed error handling sine all aspects are allready handled
+    out, _ := json.MarshalIndent(resp, "", "    ")
 
     w.Header().Set("Content-Type", "application/json")
     w.Write(out)

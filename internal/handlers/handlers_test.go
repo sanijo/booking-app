@@ -2,12 +2,16 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"reflect"
 	"strings"
 	"testing"
 
+	"github.com/sanijo/rent-app/internal/driver"
 	"github.com/sanijo/rent-app/internal/models"
 )
 
@@ -29,22 +33,6 @@ var theTests = []struct {
     {"model-y", "/model-y", "GET", http.StatusOK},
     {"check-availability", "/check-availability", "GET", http.StatusOK},
     {"rent-summary", "/rent-summary", "GET", http.StatusOK},
-
-// Those below use session and database, so they are not suitable for testing
-//    {"post-check-availability", "/check-availability", "POST", []postData{
-//        {key: "start", value: "2020-01-01"},
-//        {key: "end", value: "2020-01-02"},
-//    }, http.StatusOK},
-//    {"post-check-availability-json", "/check-availability-json", "POST", []postData{
-//        {key: "start", value: "2020-01-01"},
-//        {key: "end", value: "2020-01-02"},
-//    }, http.StatusOK},
-//    {"post-rent", "/rent", "POST", []postData{
-//        {key: "first_name", value: "John"},
-//        {key: "last_name", value: "Doe"},
-//        {key: "email", value: "name@lastname.com"},
-//        {key: "phone", value: "+38599534256"},
-//    }, http.StatusOK},
 }
 
 func TestHandlers(t *testing.T) {
@@ -65,6 +53,148 @@ func TestHandlers(t *testing.T) {
                     e.name, e.expetedStatusCode, response.StatusCode)
             }
         }
+    }
+}
+
+// data for the PostAvaialability handler 
+var postAvailabilityTests = []struct {
+    name string
+    postedData url.Values
+    expectedStatusCode int
+    expectedLocation string
+}{
+    {
+        name: "cannot parse form",
+        postedData: nil,
+        expectedStatusCode: http.StatusTemporaryRedirect,
+        expectedLocation: "/",
+    },
+    {
+        name: "invalid start date",
+        postedData: url.Values{
+            "start": {"invalid"},
+            "end": {"2021-05-20"},
+        },
+        expectedStatusCode: http.StatusTemporaryRedirect,
+        expectedLocation: "/",
+    },
+    {
+        name: "invalid end date",
+        postedData: url.Values{
+            "start": {"2021-05-20"},
+            "end": {"invalid"},
+        },
+        expectedStatusCode: http.StatusTemporaryRedirect,
+        expectedLocation: "/",
+    },
+    {
+        name: "SearchAvailabilityForAllModels fails (start=2021-01-01)",
+        postedData: url.Values{
+            "start": {"2021-01-01"},
+            "end": {"2021-01-02"},
+        },
+        expectedStatusCode: http.StatusTemporaryRedirect,
+        expectedLocation: "/",
+    },
+    {
+        name: "length of models returned is 0",
+        postedData: url.Values{
+            "start": {"2021-05-20"},
+            "end": {"2021-05-21"},
+        },
+        expectedStatusCode: http.StatusSeeOther,
+        expectedLocation: "/check-availability",
+    },
+    {
+        name: "models are available (start=2022-01-02)",
+        postedData: url.Values{
+            "start": {"2022-01-02"},
+            "end": {"2022-01-03"},
+        },
+        expectedStatusCode: http.StatusOK,
+        expectedLocation: "",
+    },
+}
+
+// TestPostAvailability tests the PostAvailability handler /check-availability route
+func TestPostAvailability(t *testing.T) {
+    for _, e := range postAvailabilityTests {
+        var r *http.Request
+        if e.postedData != nil {
+            r, _ = http.NewRequest("POST", "/check-availability", strings.NewReader(e.postedData.Encode()))
+        } else {
+            r, _ = http.NewRequest("POST", "/check-availability", nil)
+        }
+        ctx := getCtx(r)
+        r = r.WithContext(ctx)
+        r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+        rr := httptest.NewRecorder()
+
+        // create and call handler
+        handler := http.HandlerFunc(Repo.PostAvailability)
+        handler.ServeHTTP(rr, r)
+
+        // test for status code
+        if rr.Code != e.expectedStatusCode {
+            t.Errorf("for %s, expected %d but got %d", e.name, e.expectedStatusCode, rr.Code)
+        }
+    }
+}
+
+var postAvailabilityJSONTests = []struct {
+    name string
+    postedData url.Values
+    expectedOK bool
+}{
+    {
+        name: "no available models (start=2021-01-01)",
+        postedData: url.Values{
+            "start": {"2021-01-01"},
+            "end": {"2021-05-01"},
+            "model_id": {"1"},
+        },
+        expectedOK: false,
+    },
+//    {
+//        name: "models are available",
+//        postedData: url.Values{
+//            "start": {"2022-01-01"},
+//            "end": {"2022-05-01"},
+//            "model_id": {"1"},
+//        },
+//        expectedOK: true,
+//    },
+}
+
+// PostAvailabilityJSON tests the PostAvailabilityJSON handler /check-availability-json route
+func TestPostAvailabilityJSON(t *testing.T) {
+    for _, e := range postAvailabilityJSONTests {
+        var r *http.Request
+        if e.postedData != nil {
+            r, _ = http.NewRequest("POST", "/check-availability-json", strings.NewReader(e.postedData.Encode()))
+        } else {
+            r, _ = http.NewRequest("POST", "/check-availability-json", nil)
+        }
+        ctx := getCtx(r)
+        r = r.WithContext(ctx)
+        r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+        rr := httptest.NewRecorder()
+
+        // create and call handler
+        handler := http.HandlerFunc(Repo.PostAvailabilityJSON)
+        handler.ServeHTTP(rr, r)
+
+        // test for json response 
+        var response jsonResponse
+        err := json.Unmarshal([]byte(rr.Body.String()), &response)
+        if err != nil {
+            t.Errorf("error parsing json")
+        }
+
+        if response.OK != e.expectedOK {
+            t.Errorf("for %s, expected %v but got %v", e.name, e.expectedOK, response.OK)
+        }
+
     }
 }
 
@@ -151,163 +281,203 @@ func TestRent(t *testing.T) {
     }
 }
 
-func TestRepository_PostRent(t *testing.T) {
-    // dummy rent struct for testing
-    rent := models.Rent{
-        FirstName: "John",
-        LastName: "Doe",
-        Email: "john@doe.com",
-        Phone: "+38599534256",
-        ModelID: 1,
-        Model: models.Model{
-            ID: 1,
-            ModelName: "Model 3",
+// postRentTests is data for the PostRent handler
+var  postRentTests = []struct {
+    name string
+    inSession bool
+    rent models.Rent
+    postedData url.Values
+    expectedResponseCode int
+    expectedLocation string
+    expectedHTML string
+}{
+    {
+        name: "valid post data",
+        inSession: true,
+        rent: models.Rent{
+            FirstName: "John",
+            LastName: "Doe",
+            Email: "john@doe.com",
+            Phone: "+38599534256",
+            ModelID: 1,
+            Model: models.Model{
+                ID: 1,
+                ModelName: "Model 3",
+            },
         },
-    }
-
-    // post data necessary to create request
-    reqBody := "start_date=2050-01-01"
-    reqBody += "&end_date=2050-01-02"
-    reqBody += "&first_name=John"
-    reqBody += "&last_name=Doe"
-    reqBody += "&email=john@doe.com"
-    reqBody += "&phone=+38599534256"
-    reqBody += "&model_id=1"
-
-    // test case when there is post body data
-    r, _ := http.NewRequest("POST", "/rent", strings.NewReader(reqBody))
-    ctx := getCtx(r)
-    r = r.WithContext(ctx)
-    // set the header for the request (not necessary for this test but it is 
-    // good practice). It is information to the server about the request type.
-    // In this case it says that it is form post request.
-    r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-    rr := httptest.NewRecorder()
-    handler := http.HandlerFunc(Repo.PostRent)
-    session.Put(ctx, "rent", rent)
-    handler.ServeHTTP(rr, r)
-    if rr.Code != http.StatusSeeOther {
-        t.Errorf("PostRent handler returned wrong response code: got %d, wanted %d", rr.Code, http.StatusSeeOther)
-    }
-
-    // test case when there is no rent in session
-    r, _ = http.NewRequest("POST", "/rent", strings.NewReader(reqBody))
-    ctx = getCtx(r)
-    r = r.WithContext(ctx)
-    r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-    rr = httptest.NewRecorder()
-    handler.ServeHTTP(rr, r)
-    if rr.Code != http.StatusTemporaryRedirect {
-        t.Errorf("Rent handler returned wrong response code: got %d, wanted %d", rr.Code, http.StatusTemporaryRedirect)
-    }
-
-    // test case when there is no post body data
-    r, _ = http.NewRequest("POST", "/rent", nil)
-    ctx = getCtx(r)
-    r = r.WithContext(ctx)
-    // set the header for the request (not necessary for this test but it is 
-    // good practice). It is information to the server about the request type.
-    // In this case it says that it is form post request.
-    r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-    rr = httptest.NewRecorder()
-    handler = http.HandlerFunc(Repo.PostRent)
-    session.Put(ctx, "rent", rent)
-    handler.ServeHTTP(rr, r)
-    if rr.Code != http.StatusTemporaryRedirect {
-        t.Errorf("PostRent handler returned wrong response code for missing post body: got %d, wanted %d", rr.Code, http.StatusTemporaryRedirect)
-    }
-
-    // test case when the form is not valid
-    reqBody = "start_date=invalid"
-    reqBody += "&end_date=invalid"
-    reqBody += "&first_name=John"
-    reqBody += "&last_name=Doe"
-    reqBody += "&phone=+38599534256"
-    reqBody += "&model_id=1"
-
-    r, _ = http.NewRequest("POST", "/rent", strings.NewReader(reqBody))
-    ctx = getCtx(r)
-    r = r.WithContext(ctx)
-    r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-    rr = httptest.NewRecorder()
-    handler = http.HandlerFunc(Repo.PostRent)
-    session.Put(ctx, "rent", rent)
-    handler.ServeHTTP(rr, r)
-    if rr.Code != http.StatusSeeOther {
-        t.Errorf("PostRent handler returned wrong response code for invalid form: got %d, wanted %d", rr.Code, http.StatusSeeOther)
-    }
-
-    // test case for inserting rent into database using test-db
-    // dummy rent struct for testing
-    rent = models.Rent{
-        FirstName: "John",
-        LastName: "Doe",
-        Email: "john@doe.com",
-        Phone: "+38599534256",
-        ModelID: 3,
-        Model: models.Model{
-            ID: 3,
-            ModelName: "Model 3",
+        postedData: url.Values{
+            "start_date": {"2050-01-01"},
+            "end_date": {"2050-01-02"}, 
+            "first_name": {"John"},
+            "last_name": {"Doe"},
+            "email": {"john@doe.com"},
+            "phone": {"+38599534256"},
+            "model_id": {"1"},
         },
-    }
-
-    // post data necessary to create request
-    reqBody = "start_date=2050-01-01"
-    reqBody += "&end_date=2050-01-02"
-    reqBody += "&first_name=John"
-    reqBody += "&last_name=Doe"
-    reqBody += "&email=john@doe.com"
-    reqBody += "&phone=+38599534256"
-    reqBody += "&model_id=3"
-
-    r, _ = http.NewRequest("POST", "/rent", strings.NewReader(reqBody))
-    ctx = getCtx(r)
-    r = r.WithContext(ctx)
-    r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-    rr = httptest.NewRecorder()
-    handler = http.HandlerFunc(Repo.PostRent)
-    // uddate session with new rent struct
-    session.Put(ctx, "rent", rent)
-    handler.ServeHTTP(rr, r)
-    if rr.Code != http.StatusSeeOther {
-        t.Errorf("PostRent handler returned wrong response code for inserting rent into database: got %d, wanted %d", rr.Code, http.StatusSeeOther)
-    }
-
-    // test case for inserting rent restriction into database using test-db
-    // dummy rent struct for testing
-    rent = models.Rent{
-        FirstName: "John",
-        LastName: "Doe",
-        Email: "john@doe.com",
-        Phone: "+38599534256",
-        ModelID: 4,
-        Model: models.Model{
-            ID: 4,
-            ModelName: "Model 3",
+        expectedResponseCode: http.StatusSeeOther,
+        expectedLocation: "/rent-summary",
+        expectedHTML: "",
+    },
+    {
+        name: "invalid post data",
+        inSession: true,
+        rent: models.Rent{},
+        postedData: nil,
+        expectedResponseCode: http.StatusTemporaryRedirect,
+        expectedLocation: "/",
+        expectedHTML: "",
+    },
+    {
+        name: "no rent in session",
+        inSession: false,
+        rent: models.Rent{},
+        postedData: url.Values{
+            "start_date": {"2050-01-01"},
+            "end_date": {"2050-01-02"},
+            "first_name": {"John"},
+            "last_name": {"Doe"},
+            "email": {"john@doe.com"},
+            "phone": {"+38599534256"},
+            "model_id": {"1"},
         },
+        expectedResponseCode: http.StatusTemporaryRedirect,
+        expectedLocation: "/",
+        expectedHTML: "",
+    },
+    {
+        name: "invalid form data (missing required fields)",
+        inSession: true,
+        rent: models.Rent{
+            FirstName: "John",
+            LastName: "Doe",
+            Email: "john@doe.com",
+            Phone: "+38599534256",
+            ModelID: 1,
+            Model: models.Model{
+                ID: 1,
+                ModelName: "Model 3",
+            },
+        },
+        postedData: url.Values{
+            "start_date": {"2050-01-01"},
+            "end_date": {"2050-01-02"},
+            "first_name": {"John"},
+            "last_name": {"Doe"},
+            "phone": {"+38599534256"},
+            "model_id": {"1"},
+        },
+        expectedResponseCode: http.StatusSeeOther,
+        expectedLocation: "",
+        expectedHTML: "",
+    },
+    {
+        name: "insert rent into database fails (ModelID == 3)",
+        inSession: true,
+        rent: models.Rent{
+            FirstName: "John",
+            LastName: "Doe",
+            Email: "john@doe.com",
+            Phone: "+38599534256",
+            ModelID: 3,
+            Model: models.Model{
+                ID: 3,
+                ModelName: "Model 3",
+            },
+        },
+        postedData: url.Values{
+            "start_date": {"2050-01-01"},
+            "end_date": {"2050-01-02"},
+            "first_name": {"John"},
+            "last_name": {"Doe"},
+            "email": {"john@doe.com"},
+            "phone": {"+38599534256"},
+            "model_id": {"3"},
+        },
+        expectedResponseCode: http.StatusSeeOther,
+        expectedLocation: "/",
+    },
+    {
+        name: "insert rent restriction into database fails (ModelID == 4)",
+        inSession: true,
+        rent: models.Rent{
+            FirstName: "John",
+            LastName: "Doe",
+            Email: "john@doe.com",
+            Phone: "+38599534256",
+            ModelID: 4,
+            Model: models.Model{
+                ID: 4,
+                ModelName: "Model 3",
+            },
+        },
+        postedData: url.Values{
+            "start_date": {"2050-01-01"},
+            "end_date": {"2050-01-02"},
+            "first_name": {"John"},
+            "last_name": {"Doe"},
+            "email": {"john@doe.com"},
+            "phone": {"+38599534256"},
+            "model_id": {"4"},
+        },
+        expectedResponseCode: http.StatusSeeOther,
+        expectedLocation: "/",
+    },
+}
+
+func TestPostRent(t *testing.T) {
+    for _, e := range postRentTests {
+        var r *http.Request
+        if e.postedData != nil {
+            r, _ = http.NewRequest("POST", "/rent", strings.NewReader(e.postedData.Encode()))
+        } else {
+            r, _ = http.NewRequest("POST", "/rent", nil)
+        }
+        // create context
+        ctx := getCtx(r)
+        // add context to request
+        r = r.WithContext(ctx)
+        // set content type
+        r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+        // create recorder 
+        rr := httptest.NewRecorder()
+        // create handler 
+        handler := http.HandlerFunc(Repo.PostRent)
+        // check if rent is in a session, and if so put it in a session 
+        if e.inSession {
+            session.Put(ctx, "rent", e.rent)
+        }
+        handler.ServeHTTP(rr, r)
+
+        // test for status code
+        if rr.Code != e.expectedResponseCode {
+            t.Errorf("for %s, expected %d but got %d", e.name, e.expectedResponseCode, rr.Code)
+        }
+
+        // test for Location
+        if e.expectedLocation != "" {
+            headers := rr.Result().Header
+            if headers.Get("Location") != e.expectedLocation {
+                t.Errorf("for %s, expected %s but got %s", e.name, e.expectedLocation, headers.Get("Location"))
+            }
+        }
+
+        // test for expected expected HTML 
+        if e.expectedHTML != "" {
+            if !strings.Contains(rr.Body.String(), e.expectedHTML) {
+                t.Errorf("for %s, expected %s but got %s", e.name, e.expectedHTML, rr.Body.String())
+            }
+        }
     }
 
-    // post data necessary to create request
-    reqBody = "start_date=2050-01-01"
-    reqBody += "&end_date=2050-01-02"
-    reqBody += "&first_name=John"
-    reqBody += "&last_name=Doe"
-    reqBody += "&email=john@doe.com"
-    reqBody += "&phone=+38599534256"
-    reqBody += "&model_id=4"
+}
 
-    r, _ = http.NewRequest("POST", "/rent", strings.NewReader(reqBody))
-    ctx = getCtx(r)
-    r = r.WithContext(ctx)
-    r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-    rr = httptest.NewRecorder()
-    handler = http.HandlerFunc(Repo.PostRent)
-    // uddate session with new rent struct
-    session.Put(ctx, "rent", rent)
-    rent = session.Get(ctx, "rent").(models.Rent)
-    handler.ServeHTTP(rr, r)
-    if rr.Code != http.StatusSeeOther {
-        t.Errorf("PostRent handler returned wrong response code for inserting rent restriction into database: got %d, wanted %d", rr.Code, http.StatusSeeOther)
+// TestNewRepo tests the NewRepo function
+func TestNewRepo(t *testing.T) {
+    var db driver.DB 
+    testRepo := NewRepo(&app, &db)
+
+    if reflect.TypeOf(testRepo) != reflect.TypeOf(&Repository{}) {
+        t.Error("NewRepo did not return a pointer to testrepo")
     }
 }
 
