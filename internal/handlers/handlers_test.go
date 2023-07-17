@@ -150,20 +150,34 @@ var postAvailabilityJSONTests = []struct {
         name: "no available models (start=2021-01-01)",
         postedData: url.Values{
             "start": {"2021-01-01"},
-            "end": {"2021-05-01"},
+            "end": {"2021-01-02"},
             "model_id": {"1"},
         },
         expectedOK: false,
     },
-//    {
-//        name: "models are available",
-//        postedData: url.Values{
-//            "start": {"2022-01-01"},
-//            "end": {"2022-05-01"},
-//            "model_id": {"1"},
-//        },
-//        expectedOK: true,
-//    },
+    {
+        name: "models are available",
+        postedData: url.Values{
+            "start": {"2022-01-02"},
+            "end": {"2022-01-03"},
+            "model_id": {"1"},
+        },
+        expectedOK: true,
+    },
+    {
+        name: "empty post body",
+        postedData: nil,
+        expectedOK: false,
+    },
+    {
+        name: "database query returns error (start=2021-01-02)",
+        postedData: url.Values{
+            "start": {"2021-01-02"},
+            "end": {"2021-01-03"},
+            "model_id": {"1"},
+        },
+        expectedOK: false,
+    },
 }
 
 // PostAvailabilityJSON tests the PostAvailabilityJSON handler /check-availability-json route
@@ -176,16 +190,19 @@ func TestPostAvailabilityJSON(t *testing.T) {
             r, _ = http.NewRequest("POST", "/check-availability-json", nil)
         }
         ctx := getCtx(r)
-        r = r.WithContext(ctx)
+        r = r.WithContext(ctx) // add context to request
         r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-        rr := httptest.NewRecorder()
 
-        // create and call handler
+        // make handler HandlerFunc
         handler := http.HandlerFunc(Repo.PostAvailabilityJSON)
+        // create response recorder
+        rr := httptest.NewRecorder()
+        // make request to handler
         handler.ServeHTTP(rr, r)
 
         // test for json response 
         var response jsonResponse
+        // get what is being handed back from the server and put it into the response struct
         err := json.Unmarshal([]byte(rr.Body.String()), &response)
         if err != nil {
             t.Errorf("error parsing json")
@@ -470,6 +487,220 @@ func TestPostRent(t *testing.T) {
     }
 
 }
+
+// rentSummaryTests is a struct that holds test data for the RentSummary handler
+var rentSummaryTests = []struct {
+    name string
+    inSession bool
+    rent models.Rent
+    expectedResponseCode int
+    expectedLocation string
+}{
+    {
+        name: "rent in session",
+        inSession: true,
+        rent: models.Rent{
+            FirstName: "John",
+            LastName: "Doe",
+            Email: "john@doe.com",
+            Phone: "+38599534256",
+            ModelID: 1,
+            Model: models.Model{
+                ID: 1,
+                ModelName: "Model 3",
+            },
+        },
+        expectedResponseCode: http.StatusOK,
+        expectedLocation: "",
+    },
+    {
+        name: "rent not in session",
+        inSession: false,
+        rent: models.Rent{},
+        expectedResponseCode: http.StatusTemporaryRedirect,
+        expectedLocation: "/",
+    },
+}
+
+//TestRentSummary tests the RentSummary handler
+func TestRentSummary(t *testing.T) {
+    for _, e := range rentSummaryTests {
+        var r *http.Request
+        r, _ = http.NewRequest("GET", "/rent-summary", nil)
+        // create context
+        ctx := getCtx(r)
+        // add context to request
+        r = r.WithContext(ctx)
+        // create recorder 
+        rr := httptest.NewRecorder()
+        // create handler 
+        handler := http.HandlerFunc(Repo.RentSummary)
+        // check if rent is in a session, and if so put it in a session 
+        if e.inSession {
+            session.Put(ctx, "rent", e.rent)
+        }
+        handler.ServeHTTP(rr, r)
+
+        // test for status code
+        if rr.Code != e.expectedResponseCode {
+            t.Errorf("for %s, expected %d but got %d", e.name, e.expectedResponseCode, rr.Code)
+        }
+
+        // test for Location
+        if e.expectedLocation != "" {
+            headers := rr.Result().Header
+            if headers.Get("Location") != e.expectedLocation {
+                t.Errorf("for %s, expected %s but got %s", e.name, e.expectedLocation, headers.Get("Location"))
+            }
+        }
+    }
+}
+
+// testChooseModel is a struct that holds tests for the ChooseModel handler
+var testChooseModel = []struct {
+    name string
+    inSession bool
+    rent models.Rent
+    url string
+    expectedResponseCode int
+    expectedLocation string
+}{
+    {
+        name: "rent in session",
+        inSession: true,
+        rent: models.Rent{
+            FirstName: "John",
+            LastName: "Doe",
+            Email: "john@doe.com",
+            Phone: "+38599534256",
+            ModelID: 1,
+            Model: models.Model{
+                ID: 1,
+                ModelName: "Model 3",
+            },
+        },
+        url: "/choose-model/1",
+        expectedResponseCode: http.StatusSeeOther,
+        expectedLocation: "/rent",
+    },
+    {
+        name: "rent not in session",
+        inSession: false,
+        rent: models.Rent{},
+        url: "/choose-model/1",
+        expectedResponseCode: http.StatusSeeOther,
+        expectedLocation: "/",
+    },
+    {
+        name: "invalid model id (URL parameter)",
+        inSession: true,
+        rent: models.Rent{
+            FirstName: "John",
+            LastName: "Doe",
+            Email: "john@doe.com",
+            Phone: "+38599534256",
+            ModelID: 1,
+            Model: models.Model{
+                ID: 1,
+                ModelName: "Model 3",
+            },
+        },
+        url: "/choose-model/invalid",
+        expectedResponseCode: http.StatusTemporaryRedirect,
+        expectedLocation: "/",
+    },
+}
+
+// TestChooseModel tests the ChooseModel handler
+func TestChooseModel(t *testing.T) {
+    for _, e := range testChooseModel {
+        var r *http.Request
+        r, _ = http.NewRequest("GET", e.url, nil)
+        // create context
+        ctx := getCtx(r)
+        // add context to request
+        r = r.WithContext(ctx)
+        // create recorder 
+        rr := httptest.NewRecorder()
+        // create handler 
+        handler := http.HandlerFunc(Repo.ChooseModel)
+        // check if rent is in a session, and if so put it in a session 
+        if e.inSession {
+            session.Put(ctx, "rent", e.rent)
+        }
+        handler.ServeHTTP(rr, r)
+
+        // test for status code
+        if rr.Code != e.expectedResponseCode {
+            t.Errorf("for %s, expected %d but got %d", e.name, e.expectedResponseCode, rr.Code)
+        }
+
+        // test for Location
+        if e.expectedLocation != "" {
+            headers := rr.Result().Header
+            if headers.Get("Location") != e.expectedLocation {
+                t.Errorf("for %s, expected %s but got %s", e.name, e.expectedLocation, headers.Get("Location"))
+            }
+        }
+    }
+}
+
+// testRentVehicle is a struct that holds tests for the RentVehicle handler
+var testRentVehicle = []struct {
+    name string
+    url string
+    expectedResponseCode int
+}{
+    {
+        name: "valid url parameters",
+        url: "/rent-vehicle?s=2023-01-01&e=2023-01-02&id=1",
+        expectedResponseCode: http.StatusSeeOther,
+    },
+    {
+        name: "invalid url parameters",
+        url: "/rent-vehicle?s=invalid&e=invalid&id=invalid",
+        expectedResponseCode: http.StatusTemporaryRedirect,
+    },
+    {
+        name: "invalid start date",
+        url: "/rent-vehicle?s=invalid&e=2023-01-02&id=1",
+        expectedResponseCode: http.StatusSeeOther,
+    },
+    {
+        name: "invalid end date",
+        url: "/rent-vehicle?s=2023-01-01&e=invalid&id=1",
+        expectedResponseCode: http.StatusSeeOther,
+    },
+    {
+        name: "invalid model id",
+        url: "/rent-vehicle?s=2023-01-01&e=2023-01-02&id=4",
+        expectedResponseCode: http.StatusSeeOther,
+    },
+}
+
+
+// TestRentVehicle tests the RentVehicle handler
+func TestRentVehicle(t *testing.T) {
+    for _, e := range testRentVehicle {
+        var r *http.Request
+        r, _ = http.NewRequest("GET", e.url, nil)
+        // create context
+        ctx := getCtx(r)
+        // add context to request
+        r = r.WithContext(ctx)
+        // create recorder 
+        rr := httptest.NewRecorder()
+        // create handler 
+        handler := http.HandlerFunc(Repo.RentVehicle)
+        handler.ServeHTTP(rr, r)
+
+        // test for status code
+        if rr.Code != e.expectedResponseCode {
+            t.Errorf("for %s, expected %d but got %d", e.name, e.expectedResponseCode, rr.Code)
+        }
+    }
+}
+
 
 // TestNewRepo tests the NewRepo function
 func TestNewRepo(t *testing.T) {

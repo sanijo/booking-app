@@ -4,13 +4,12 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/sanijo/rent-app/internal/config"
 	"github.com/sanijo/rent-app/internal/driver"
 	"github.com/sanijo/rent-app/internal/forms"
-	"github.com/sanijo/rent-app/internal/helpers"
 	"github.com/sanijo/rent-app/internal/models"
 	"github.com/sanijo/rent-app/internal/render"
 	"github.com/sanijo/rent-app/internal/repository"
@@ -196,7 +195,8 @@ func (m *Repository) PostAvailabilityJSON(w http.ResponseWriter, r *http.Request
         EndDate: ed,
     }
 
-    // removed error handling sine all aspects are allready handled
+    // removed error handling sine all aspects are allready handled and resp is
+    // manually created so there is no error
     out, _ := json.MarshalIndent(resp, "", "    ")
 
     w.Header().Set("Content-Type", "application/json")
@@ -347,7 +347,6 @@ func (m *Repository) Contact(w http.ResponseWriter, r *http.Request) {
 func (m *Repository) RentSummary(w http.ResponseWriter, r *http.Request) {
     rent, ok := m.App.Session.Get(r.Context(), "rent").(models.Rent)
     if !ok {
-        m.App.ErrorLog.Println("Cannot get item from session")
         m.App.Session.Put(r.Context(), "error", "Can't get rent from session")
         http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
         return
@@ -376,10 +375,12 @@ func (m *Repository) RentSummary(w http.ResponseWriter, r *http.Request) {
 
 // ChooseModel is choose-model page handler
 func (m *Repository) ChooseModel(w http.ResponseWriter, r *http.Request) {
-    // get model id from url
-    modelID, err := strconv.Atoi(chi.URLParam(r, "id")) 
+    // split url by /, and get 3rd element that is model id
+    exploded := strings.Split(r.URL.Path, "/")
+    modelID, err := strconv.Atoi(exploded[2])
     if err != nil {
-        helpers.ServerError(w, err)
+        m.App.Session.Put(r.Context(), "error", "Missing url parameter")
+        http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
         return
     }
 
@@ -405,7 +406,8 @@ func (m *Repository) RentVehicle(w http.ResponseWriter, r *http.Request) {
     // grab id, s, and e values from url
     modelID, err := strconv.Atoi(r.URL.Query().Get("id"))
     if err != nil {
-        helpers.ServerError(w, err)
+        m.App.Session.Put(r.Context(), "error", "Missing url parameter")
+        http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
         return
     }
 
@@ -413,21 +415,25 @@ func (m *Repository) RentVehicle(w http.ResponseWriter, r *http.Request) {
     ed := r.URL.Query().Get("e")
 
     // convert the date to time.Time type to be able to use it in rent-vehicle template
-    startDate, err := time.Parse("2006-01-02", sd)
+    layout := "2006-01-02"
+    startDate, err := time.Parse(layout, sd)
     if err != nil {
-        helpers.ServerError(w, err)
+        m.App.Session.Put(r.Context(), "error", "Can't parse start date")
+        http.Redirect(w, r, "/", http.StatusSeeOther)
         return
     }
-    endDate, err := time.Parse("2006-01-02", ed)
+    endDate, err := time.Parse(layout, ed)
     if err != nil {
-        helpers.ServerError(w, err)
+        m.App.Session.Put(r.Context(), "error", "Can't parse end date")
+        http.Redirect(w, r, "/", http.StatusSeeOther)
         return
     }
 
     // get model from database
     model, err := m.DB.GetModelByID(modelID)
     if err != nil {
-        helpers.ServerError(w, err)
+        m.App.Session.Put(r.Context(), "error", "Can't get model from database")
+        http.Redirect(w, r, "/", http.StatusSeeOther)
         return
     }
     

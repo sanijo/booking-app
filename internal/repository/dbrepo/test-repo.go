@@ -41,6 +41,8 @@ func (m *testDBRepo) SearchAvailabilityByDatesAndModelID(start, end time.Time, m
     date, _ := time.Parse(layout, "2021-01-01")
     if start == date {
         return false, nil
+    } else if start == date.AddDate(0, 0, 1) {
+        return false, errors.New("some error")
     }
 
     return true, nil
